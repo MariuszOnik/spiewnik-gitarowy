@@ -18,7 +18,6 @@ function parseChordSegments(chordLine: string, lyricLine: string): Segment[] {
   }
   if (positions.length === 0) return [{ text: lyricLine }]
 
-  // Find word-start positions in lyric line
   const wordStarts: number[] = []
   for (let j = 0; j < lyricLine.length; j++) {
     if (lyricLine[j] !== ' ' && (j === 0 || lyricLine[j - 1] === ' ')) {
@@ -26,7 +25,6 @@ function parseChordSegments(chordLine: string, lyricLine: string): Segment[] {
     }
   }
 
-  // Snap each chord position to nearest word boundary (<= chord pos)
   function snapToWord(pos: number): number {
     let best = 0
     for (const ws of wordStarts) {
@@ -36,7 +34,6 @@ function parseChordSegments(chordLine: string, lyricLine: string): Segment[] {
     return best
   }
 
-  // Map chords to word boundaries, deduplicate
   const seen = new Set<number>()
   const snapped: Array<{ chord: string; pos: number }> = []
   for (const { chord, pos } of positions) {
@@ -48,20 +45,51 @@ function parseChordSegments(chordLine: string, lyricLine: string): Segment[] {
   }
 
   const segments: Segment[] = []
-
-  // Text before first chord
   if (snapped[0].pos > 0) {
     segments.push({ text: lyricLine.slice(0, snapped[0].pos) })
   }
-
   for (let i = 0; i < snapped.length; i++) {
     const { chord, pos } = snapped[i]
     const nextPos = i + 1 < snapped.length ? snapped[i + 1].pos : undefined
     const text = nextPos !== undefined ? lyricLine.slice(pos, nextPos) : lyricLine.slice(pos)
     segments.push({ chord, text })
   }
-
   return segments
+}
+
+// whiteSpace: pre-wrap preserves trailing spaces inside inline-block
+// (without it browsers collapse the trailing space between adjacent segments)
+function renderSegments(
+  segments: Segment[],
+  fontSize: number,
+  chordColor: string | undefined,
+  lyricsColor: string | undefined,
+  key: number | string
+) {
+  const padTop = fontSize * 1.4
+  return (
+    <div key={key} className="mb-2">
+      {segments.map((seg, si) => (
+        <span
+          key={si}
+          className="relative inline-block"
+          style={{ paddingTop: padTop, verticalAlign: 'top', whiteSpace: 'pre-wrap' }}
+        >
+          {seg.chord && (
+            <span
+              className="absolute top-0 left-0 font-mono font-bold whitespace-nowrap leading-none"
+              style={{ fontSize, color: chordColor }}
+            >
+              {seg.chord}
+            </span>
+          )}
+          <span style={{ fontSize, color: lyricsColor || undefined }}>
+            {seg.text || ' '}
+          </span>
+        </span>
+      ))}
+    </div>
+  )
 }
 
 export default function SongRenderer({ content, fontSize }: Props) {
@@ -82,13 +110,11 @@ export default function SongRenderer({ content, fontSize }: Props) {
     const trimmed = line.trim()
     const origTrimmed = origLine.trim()
 
-    // Pusta linia
     if (!trimmed) {
       elements.push(<div key={i} className="h-4" />)
       i++; continue
     }
 
-    // Naglowek sekcji [Verse 1]
     if (/^\[.+\]$/.test(trimmed) && !trimmed.slice(1, -1).match(/^[A-G][b#]?/)) {
       elements.push(
         <p key={i} className="font-bold uppercase tracking-widest mt-4 mb-1"
@@ -99,7 +125,6 @@ export default function SongRenderer({ content, fontSize }: Props) {
       i++; continue
     }
 
-    // Linie akordow - zbierz wszystkie kolejne
     if (isChordLine(origTrimmed)) {
       const chordLines: string[] = [trimmed]
       let j = i + 1
@@ -119,49 +144,23 @@ export default function SongRenderer({ content, fontSize }: Props) {
         && !isChordLine((nextOrigLine ?? nextDispLine).trim())
 
       if (hasLyric) {
-        // Poprzednie linie akordow (jesli wiecej niz 1) wyswietl osobno
         for (let k = 0; k < chordLines.length - 1; k++) {
           elements.push(
-            <div key={`chord-pre-${i}-${k}`}
+            <div key={`cpre-${i}-${k}`}
                  className="font-mono font-bold whitespace-pre-wrap"
                  style={{ fontSize, color: chordColor }}>
               {chordLines[k]}
             </div>
           )
         }
-        // Ostatnia linia akordow inline z tekstem
-        const lastChordLine = chordLines[chordLines.length - 1]
-        const segments = parseChordSegments(lastChordLine, nextDispLine)
-        elements.push(
-          <div key={i} className="mb-2">
-            {segments.map((seg, si) => (
-              <span
-                key={si}
-                className="relative inline-block"
-                style={{ paddingTop: `${fontSize * 1.4}px`, verticalAlign: 'top' }}
-              >
-                {seg.chord && (
-                  <span
-                    className="absolute top-0 left-0 font-mono font-bold whitespace-nowrap leading-none"
-                    style={{ fontSize, color: chordColor }}
-                  >
-                    {seg.chord}
-                  </span>
-                )}
-                <span style={{ fontSize, color: lyricsColor || undefined }}>
-                  {seg.text || ' '}
-                </span>
-              </span>
-            ))}
-          </div>
-        )
+        const segments = parseChordSegments(chordLines[chordLines.length - 1], nextDispLine)
+        elements.push(renderSegments(segments, fontSize, chordColor, lyricsColor, i))
         i = j + 1; continue
       }
 
-      // Linie akordow bez tekstu
       for (let k = 0; k < chordLines.length; k++) {
         elements.push(
-          <div key={`chord-${i}-${k}`}
+          <div key={`c-${i}-${k}`}
                className="font-mono font-bold whitespace-pre-wrap mb-1"
                style={{ fontSize, color: chordColor }}>
             {chordLines[k]}
@@ -171,7 +170,6 @@ export default function SongRenderer({ content, fontSize }: Props) {
       i = j; continue
     }
 
-    // Format inline [Akord]tekst
     if (line.includes('[')) {
       const tokens = parseLine(line)
       elements.push(
@@ -196,7 +194,6 @@ export default function SongRenderer({ content, fontSize }: Props) {
       i++; continue
     }
 
-    // Zwykla linia tekstu
     elements.push(
       <p key={i} className="leading-snug mb-1 whitespace-pre-wrap"
          style={{ fontSize, color: lyricsColor || undefined }}>
