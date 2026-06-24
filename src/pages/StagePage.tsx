@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { X, Play, Pause, ChevronUp, ChevronDown, Bluetooth } from 'lucide-react'
+import { X, Play, Pause, Bluetooth, Maximize2 } from 'lucide-react'
 import { useSongsStore } from '@/store/songsStore'
 import { useAutoScroll } from '@/hooks/useAutoScroll'
 import { isChordLine, parseLine } from '@/utils/chords'
@@ -249,6 +249,13 @@ export default function StagePage() {
                 <span className="text-xs">pedał: ⎵/↓</span>
               </div>
               <button
+                onClick={() => document.documentElement.requestFullscreen?.()}
+                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700"
+                title="Pełny ekran"
+              >
+                <Maximize2 size={18} className="text-gray-300" />
+              </button>
+              <button
                 onClick={() => { stop(); navigate(`/song/${id}`) }}
                 className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700"
               >
@@ -274,21 +281,19 @@ export default function StagePage() {
             </button>
 
             {/* Prędkość */}
-            <div className="flex items-center gap-1 flex-1">
+            <div className="flex items-center justify-between bg-gray-800 rounded-xl px-3 py-1.5 flex-1">
               <button
                 onClick={() => { const v = Math.max(1, scrollSpeed - 5); setScrollSpeed(v); saveSettings(v, fontSize) }}
-                className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center"
-              ><ChevronDown size={14} className="text-gray-300" /></button>
-              <input
-                type="range" min={1} max={100} value={scrollSpeed}
-                onChange={e => { const v = Number(e.target.value); setScrollSpeed(v); saveSettings(v, fontSize) }}
-                className="flex-1 accent-yellow-400 h-1.5"
-              />
+                className="w-8 h-8 rounded-lg bg-gray-700 flex items-center justify-center font-bold text-lg text-gray-200 hover:bg-gray-600 active:scale-95 transition-all"
+              >−</button>
+              <div className="text-center">
+                <p className="text-[10px] text-gray-500 leading-none">Tempo</p>
+                <p className="font-mono font-bold text-yellow-400 text-base leading-tight tabular-nums">{scrollSpeed}</p>
+              </div>
               <button
                 onClick={() => { const v = Math.min(100, scrollSpeed + 5); setScrollSpeed(v); saveSettings(v, fontSize) }}
-                className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center"
-              ><ChevronUp size={14} className="text-gray-300" /></button>
-              <span className="text-xs text-gray-400 w-5 tabular-nums">{scrollSpeed}</span>
+                className="w-8 h-8 rounded-lg bg-gray-700 flex items-center justify-center font-bold text-lg text-gray-200 hover:bg-gray-600 active:scale-95 transition-all"
+              >+</button>
             </div>
 
             {/* Czcionka */}

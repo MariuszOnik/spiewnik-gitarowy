@@ -81,6 +81,7 @@ tekst...`}
             <li><strong>Gatunek</strong> — folk, rock, pop itp.</li>
             <li><strong>Język</strong> — polski, angielski itp.</li>
             <li><strong>Tagi</strong> — własne słowa kluczowe oddzielone przecinkami, np. <Code>ognisko, ballada, łatwa</Code></li>
+            <li><strong>Link YouTube</strong> — opcjonalny link do nagrania lub podkładu. Po zapisaniu w nagłówku piosenki pojawi się czerwony przycisk <Code>YT</Code> otwierający film.</li>
           </ul>
           <p className="mt-2">Tagi służą do wyszukiwania — wpisz dowolny tag w polu wyszukiwania na liście.</p>
         </Section>
