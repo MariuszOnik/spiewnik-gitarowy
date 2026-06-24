@@ -61,6 +61,7 @@ export default function SongEditPage() {
   const [capo, setCapo] = useState(existing?.capo ?? forkSong?.capo ?? 0)
   const [bpm, setBpm] = useState(existing?.bpm?.toString() ?? forkSong?.bpm?.toString() ?? '')
   const [tags, setTags] = useState(existing?.tags?.join(', ') ?? forkSong?.tags?.join(', ') ?? '')
+  const [youtubeUrl, setYoutubeUrl] = useState(existing?.youtubeUrl ?? forkSong?.youtubeUrl ?? '')
   const [content, setContent] = useState(existing?.content ?? forkSong?.content ?? EXAMPLE_CONTENT)
   const [showPreview, setShowPreview] = useState(false)
   const [showMeta, setShowMeta] = useState(true)
@@ -79,6 +80,7 @@ export default function SongEditPage() {
       setCapo(existing.capo)
       setBpm(existing.bpm?.toString() ?? '')
       setTags(existing.tags.join(', '))
+      setYoutubeUrl(existing.youtubeUrl ?? '')
       setContent(existing.content)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,6 +102,7 @@ export default function SongEditPage() {
     capo,
     bpm: bpm ? parseInt(bpm) : undefined,
     tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+    youtubeUrl: youtubeUrl.trim() || undefined,
     content: normalizeNotation(content),
     isFavorite: existing?.isFavorite ?? false,
     scrollSpeed: existing?.scrollSpeed ?? 50,
@@ -107,7 +110,7 @@ export default function SongEditPage() {
     authorId: user?.id,
     authorName,
     songKey: makeSongKey(title.trim() || 'Bez tytułu', artist.trim() || 'Nieznany'),
-  }), [title, artist, author, genre, language, originalKey, capo, bpm, tags, content, existing, defaultFontSize, user, authorName])
+  }), [title, artist, author, genre, language, originalKey, capo, bpm, tags, youtubeUrl, content, existing, defaultFontSize, user, authorName])
 
   const handleSave = useCallback(async () => {
     const payload = buildPayload()
@@ -307,6 +310,15 @@ export default function SongEditPage() {
                 <input value={tags} onChange={e => setTags(e.target.value)}
                   placeholder="folk, ballada, acoustic"
                   className="input" />
+              </Field>
+            </div>
+            <div className="mt-3">
+              <Field label="Link YouTube (opcjonalny)">
+                <input value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="input"
+                  type="url"
+                  inputMode="url" />
               </Field>
             </div>
 

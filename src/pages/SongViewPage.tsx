@@ -132,6 +132,13 @@ export default function SongViewPage() {
             <button onClick={() => toggleFavorite(song.id)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0">
               <Heart size={20} className={song.isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'} />
             </button>
+            {song.youtubeUrl && (
+              <a href={song.youtubeUrl} target="_blank" rel="noopener noreferrer"
+                className="px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0 text-xs font-bold text-red-500"
+                title="Otwórz na YouTube">
+                YT
+              </a>
+            )}
             <button onClick={() => navigate(`/song/${song.id}/stage`)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0" title="Tryb sceniczny">
               <Zap size={20} className="text-amber-500" />
             </button>

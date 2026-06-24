@@ -20,6 +20,7 @@ export interface Song {
   fontSize: number
   chordOffset?: number
   transposeOffset?: number
+  youtubeUrl?: string
   authorId?: string
   authorName?: string
   songKey?: string
