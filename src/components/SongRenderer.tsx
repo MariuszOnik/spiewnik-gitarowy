@@ -57,37 +57,43 @@ function parseChordSegments(chordLine: string, lyricLine: string): Segment[] {
   return segments
 }
 
-// whiteSpace: pre-wrap preserves trailing spaces inside inline-block
-// (without it browsers collapse the trailing space between adjacent segments)
-function renderSegments(
-  segments: Segment[],
-  fontSize: number,
-  chordColor: string | undefined,
-  lyricsColor: string | undefined,
-  key: number | string
-) {
-  const padTop = fontSize * 1.4
+// Renderuje akord+tekst trzymajac tekst jako jedna ciagle linie
+// (unika kolapsowania spacji przy granicy inline-block)
+// Akordy sa pozycjonowane absolutnie uzywajac jednostek 'ch' (1ch = szerokosc znaku monospace)
+function ChordLyricLine({
+  segments,
+  fontSize,
+  chordColor,
+  lyricsColor,
+}: {
+  segments: Segment[]
+  fontSize: number
+  chordColor?: string
+  lyricsColor?: string
+}) {
+  const lyricText = segments.map(s => s.text).join('')
+
+  let charCount = 0
+  const chords: Array<{ chord: string; pos: number }> = []
+  for (const seg of segments) {
+    if (seg.chord) chords.push({ chord: seg.chord, pos: charCount })
+    charCount += seg.text.length
+  }
+
   return (
-    <div key={key} className="mb-2">
-      {segments.map((seg, si) => (
+    <div className="relative mb-2" style={{ paddingTop: `${fontSize * 1.4}px` }}>
+      {chords.map((c, ci) => (
         <span
-          key={si}
-          className="relative inline-block"
-          style={{ paddingTop: padTop, verticalAlign: 'top', whiteSpace: 'pre-wrap' }}
+          key={ci}
+          className="absolute font-mono font-bold whitespace-nowrap leading-none"
+          style={{ top: 0, left: `${c.pos}ch`, fontSize, color: chordColor }}
         >
-          {seg.chord && (
-            <span
-              className="absolute top-0 left-0 font-mono font-bold whitespace-nowrap leading-none"
-              style={{ fontSize, color: chordColor }}
-            >
-              {seg.chord}
-            </span>
-          )}
-          <span style={{ fontSize, color: lyricsColor || undefined }}>
-            {seg.text || ' '}
-          </span>
+          {c.chord}
         </span>
       ))}
+      <span className="whitespace-pre-wrap" style={{ fontSize, color: lyricsColor || undefined }}>
+        {lyricText}
+      </span>
     </div>
   )
 }
@@ -144,6 +150,7 @@ export default function SongRenderer({ content, fontSize }: Props) {
         && !isChordLine((nextOrigLine ?? nextDispLine).trim())
 
       if (hasLyric) {
+        // Poprzednie linie akordow (jesli > 1) wyswietl osobno nad tekstem
         for (let k = 0; k < chordLines.length - 1; k++) {
           elements.push(
             <div key={`cpre-${i}-${k}`}
@@ -154,7 +161,15 @@ export default function SongRenderer({ content, fontSize }: Props) {
           )
         }
         const segments = parseChordSegments(chordLines[chordLines.length - 1], nextDispLine)
-        elements.push(renderSegments(segments, fontSize, chordColor, lyricsColor, i))
+        elements.push(
+          <ChordLyricLine
+            key={i}
+            segments={segments}
+            fontSize={fontSize}
+            chordColor={chordColor}
+            lyricsColor={lyricsColor}
+          />
+        )
         i = j + 1; continue
       }
 
@@ -203,5 +218,5 @@ export default function SongRenderer({ content, fontSize }: Props) {
     i++
   }
 
-  return <div className="font-mono">{elements}</div>
+  return <div className="font-mono overflow-x-hidden">{elements}</div>
 }

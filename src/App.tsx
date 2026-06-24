@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useSettingsStore } from '@/store/settingsStore'
 import { useAuthStore } from '@/store/authStore'
+import { useInitDb } from '@/hooks/useInitDb'
 import SongListPage from '@/pages/SongListPage'
 import SongViewPage from '@/pages/SongViewPage'
 import SongEditPage from '@/pages/SongEditPage'
@@ -10,10 +11,12 @@ import SetlistsPage from '@/pages/SetlistsPage'
 import SetlistDetailPage from '@/pages/SetlistDetailPage'
 import AuthPage from '@/pages/AuthPage'
 import ProfilePage from '@/pages/ProfilePage'
+import HelpPage from '@/pages/HelpPage'
 
 export default function App() {
   const { theme } = useSettingsStore()
   const initAuth = useAuthStore(s => s.init)
+  useInitDb()
 
   useEffect(() => {
     const root = document.documentElement
@@ -43,6 +46,7 @@ export default function App() {
         <Route path="/setlist/:id" element={<SetlistDetailPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/help" element={<HelpPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

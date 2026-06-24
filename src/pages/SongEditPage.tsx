@@ -46,6 +46,7 @@ export default function SongEditPage() {
   const { defaultFontSize } = useSettingsStore()
   const user = useAuthStore(s => s.user)
 
+  const loading = useSongsStore(s => s.loading)
   const isNew = id === undefined || id === 'new'
   const existing = isNew ? undefined : songs.find(s => s.id === id)
   const forkSong = forkId ? songs.find(s => s.id === forkId) : undefined
@@ -138,6 +139,15 @@ export default function SongEditPage() {
   const handleContentChange = (val: string) => {
     setContent(val)
     setSaved(false)
+  }
+
+  // Dane jeszcze sie laduja (np. po odswiezeniu strony z bezposredniego linku)
+  if (!isNew && !existing && (loading || songs.length === 0)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
 
   // Auth gate

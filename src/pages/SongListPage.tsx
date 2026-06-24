@@ -1,7 +1,6 @@
-import { Plus, Music2, Moon, Sun, Guitar, ListMusic, LogIn } from 'lucide-react'
+import { Plus, Music2, Moon, Sun, Guitar, ListMusic, LogIn, HelpCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMemo } from 'react'
-import { useInitDb } from '@/hooks/useInitDb'
 import { useSongsStore } from '@/store/songsStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { useAuthStore } from '@/store/authStore'
@@ -10,7 +9,6 @@ import SearchBar from '@/components/SearchBar'
 import type { Song } from '@/types'
 
 export default function SongListPage() {
-  useInitDb()
   const navigate = useNavigate()
   const loading = useSongsStore(s => s.loading)
   const songs = useSongsStore(s => s.songs)
@@ -60,6 +58,13 @@ export default function SongListPage() {
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Śpiewnik Gitarowy</h1>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/help')}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Pomoc" title="Pomoc"
+            >
+              <HelpCircle size={20} className="text-gray-400" />
+            </button>
             <button
               onClick={() => navigate('/setlists')}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
