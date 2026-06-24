@@ -1,0 +1,185 @@
+import type { NoteNames } from '@/types'
+
+const CHROMATIC: NoteNames[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+const FLAT_TO_SHARP: Record<string, NoteNames> = {
+  Db: 'C#', Eb: 'D#', Fb: 'E', Gb: 'F#', Ab: 'G#', Bb: 'A#', Cb: 'B',
+}
+
+// Regex do rozpoznania pojedynczego akordu (bez spacji)
+const SINGLE_CHORD_REGEX = /^([A-G][b#]?)((?:maj7|maj9|maj|min|m|sus2|sus4|sus|add9|add11|add|dim7|dim|aug|7|9|11|13|6|b5|#5)*)(?:\/([A-G][b#]?))?$/
+
+function normalizeRoot(root: string): NoteNames | null {
+  if (root in FLAT_TO_SHARP) return FLAT_TO_SHARP[root as keyof typeof FLAT_TO_SHARP]
+  if (CHROMATIC.includes(root as NoteNames)) return root as NoteNames
+  return null
+}
+
+function transposeRoot(root: NoteNames, semitones: number): NoteNames {
+  const idx = CHROMATIC.indexOf(root)
+  return CHROMATIC[((idx + semitones) % 12 + 12) % 12]
+}
+
+export function isValidChord(token: string): boolean {
+  return SINGLE_CHORD_REGEX.test(token)
+}
+
+export function transposeChord(chord: string, semitones: number): string {
+  if (semitones === 0) return chord
+  const match = chord.match(SINGLE_CHORD_REGEX)
+  if (!match) return chord
+
+  const [, rawRoot, modifier, rawBass] = match
+  const root = normalizeRoot(rawRoot)
+  if (!root) return chord
+
+  const newRoot = transposeRoot(root, semitones)
+  let result = newRoot + (modifier ?? '')
+
+  if (rawBass) {
+    const bass = normalizeRoot(rawBass)
+    result += '/' + (bass ? transposeRoot(bass, semitones) : rawBass)
+  }
+
+  return result
+}
+
+/**
+ * Sprawdza czy linia jest linią akordów:
+ * - wszystkie tokeny (po splitcie spacją) muszą być poprawnymi akordami LUB pustymi stringami
+ * - linia musi zawierać co najmniej jeden akord
+ */
+export function isChordLine(line: string): boolean {
+  const trimmed = line.trim()
+  if (!trimmed) return false
+  const tokens = trimmed.split(/\s+/)
+  return tokens.length > 0 && tokens.every(t => isValidChord(t))
+}
+
+/**
+ * Transponuje linię akordów - zastępuje każdy akord jego transpozycją,
+ * zachowując oryginalne odstępy między akordami.
+ */
+export function transposeChordLine(line: string, semitones: number): string {
+  if (semitones === 0) return line
+  return line.replace(/[A-G][b#]?(?:maj7|maj9|maj|min|m|sus2|sus4|sus|add9|add11|add|dim7|dim|aug|7|9|11|13|6|b5|#5)*(?:\/[A-G][b#]?)?/g, (chord) => {
+    if (isValidChord(chord)) return transposeChord(chord, semitones)
+    return chord
+  })
+}
+
+/**
+ * Transponuje cały tekst piosenki.
+ * Obsługuje oba formaty:
+ * 1. Linie akordów nad tekstem:  "C     G     Am"
+ * 2. Inline (ChordPro):          "[C]słowo [G]słowo"
+ */
+export function transposeContent(content: string, semitones: number): string {
+  if (semitones === 0) return content
+  return content
+    .split('\n')
+    .map(line => {
+      // Format: inline [Chord]
+      if (line.includes('[')) {
+        return line.replace(/\[([^\]]+)\]/g, (_, chord) => `[${transposeChord(chord, semitones)}]`)
+      }
+      // Format: linia akordów
+      if (isChordLine(line)) {
+        return transposeChordLine(line, semitones)
+      }
+      return line
+    })
+    .join('\n')
+}
+
+// Oblicz "Shape Key" - kształt jaki grasz na gitarze z kapodastrem
+export function getShapeKey(currentKey: NoteNames, capo: number): NoteNames {
+  const idx = CHROMATIC.indexOf(currentKey)
+  return CHROMATIC[((idx - capo) % 12 + 12) % 12]
+}
+
+// Oblicz tonację realną z kształtu + capo
+export function getRealKey(shapeKey: NoteNames, capo: number): NoteNames {
+  return CHROMATIC[(CHROMATIC.indexOf(shapeKey) + capo) % 12]
+}
+
+// Parsowanie linii w formacie inline [Chord]tekst → tokeny
+export type Token = { type: 'chord'; value: string } | { type: 'text'; value: string }
+
+export function parseLine(line: string): Token[] {
+  const tokens: Token[] = []
+  const regex = /\[([^\]]+)\]/g
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = regex.exec(line)) !== null) {
+    if (match.index > lastIndex) {
+      tokens.push({ type: 'text', value: line.slice(lastIndex, match.index) })
+    }
+    tokens.push({ type: 'chord', value: match[1] })
+    lastIndex = regex.lastIndex
+  }
+
+  if (lastIndex < line.length) {
+    tokens.push({ type: 'text', value: line.slice(lastIndex) })
+  }
+
+  return tokens
+}
+
+/**
+ * Parsowanie treści piosenki (format: akordy nad tekstem).
+ * Zwraca pary { chords: string[], lyric: string }
+ */
+export type SongLine =
+  | { type: 'chords'; chords: string[] }
+  | { type: 'lyric'; text: string }
+  | { type: 'chord-lyric'; chords: string[]; text: string }
+  | { type: 'section'; label: string }
+  | { type: 'empty' }
+
+export function parseSongContent(content: string): SongLine[] {
+  const rawLines = content.split('\n')
+  const result: SongLine[] = []
+  let i = 0
+
+  while (i < rawLines.length) {
+    const line = rawLines[i]
+    const trimmed = line.trim()
+
+    if (!trimmed) {
+      result.push({ type: 'empty' })
+      i++
+      continue
+    }
+
+    // Nagłówek sekcji: [Verse 1], [Chorus], [Bridge] itp.
+    if (/^\[.+\]$/.test(trimmed) && !isValidChord(trimmed.slice(1, -1))) {
+      result.push({ type: 'section', label: trimmed.slice(1, -1) })
+      i++
+      continue
+    }
+
+    // Linia akordów - sprawdź czy następna linia to tekst
+    if (isChordLine(trimmed)) {
+      const chords = trimmed.split(/\s+/).filter(Boolean)
+      const nextLine = rawLines[i + 1]
+
+      if (nextLine !== undefined && nextLine.trim() && !isChordLine(nextLine.trim())) {
+        result.push({ type: 'chord-lyric', chords, text: nextLine })
+        i += 2
+      } else {
+        result.push({ type: 'chords', chords })
+        i++
+      }
+      continue
+    }
+
+    result.push({ type: 'lyric', text: line })
+    i++
+  }
+
+  return result
+}
+
+export { CHROMATIC, type NoteNames }
