@@ -6,6 +6,94 @@ const FLAT_TO_SHARP: Record<string, NoteNames> = {
   Db: 'C#', Eb: 'D#', Fb: 'E', Gb: 'F#', Ab: 'G#', Bb: 'A#', Cb: 'B',
 }
 
+// Normalizacja niestandardowej notacji → standard
+// Obsługuje: notację niemiecką (H=B, B=Bb), polską małą literę (em→Em),
+// skróty enharmoniczne (As=Ab=G#, Es=Eb=D#, Cis=C#, Dis=D# itp.)
+const NOTATION_MAP: Record<string, string> = {
+  // Notacja niemiecka
+  H: 'B', h: 'B',
+  B: 'A#', b: 'A#',           // w notacji ger. B = Bb
+  // Enharmoniczne z -is / -es
+  Cis: 'C#', cis: 'C#',
+  Dis: 'D#', dis: 'D#',
+  Fis: 'F#', fis: 'F#',
+  Gis: 'G#', gis: 'G#',
+  Ais: 'A#', ais: 'A#',
+  Es: 'D#',  es: 'D#',
+  As: 'G#',  as: 'G#',
+  // Małe litery dla prostych akordów (a, e, d itp.) → wielka litera
+  a: 'A', c: 'C', d: 'D', e: 'E', f: 'F', g: 'G',
+}
+
+/**
+ * Normalizuje tekst piosenki: zamienia niestandardową notację akordów
+ * na standard (C#, A#m itp.). Bezpieczna do wywołania przed zapisem.
+ */
+export function normalizeNotation(content: string): string {
+  return content
+    .split('\n')
+    .map(line => {
+      const trimmed = line.trim()
+      if (!trimmed) return line
+
+      // Normalizuj linie akordów (nad tekstem)
+      const words = trimmed.split(/(\s+)/)
+      const allChords = words.filter(w => w.trim()).every(w => isValidChordLoose(w))
+      if (allChords && trimmed.includes(' ') || looksLikeChordLine(trimmed)) {
+        return line.replace(/[^\s]+/g, token => normalizeChordToken(token))
+      }
+
+      // Normalizuj akordy inline [chord]
+      if (line.includes('[')) {
+        return line.replace(/\[([^\]]+)\]/g, (_, chord) => `[${normalizeChordToken(chord)}]`)
+      }
+
+      return line
+    })
+    .join('\n')
+}
+
+function looksLikeChordLine(line: string): boolean {
+  const tokens = line.trim().split(/\s+/)
+  return tokens.length > 0 && tokens.every(t => isValidChordLoose(t))
+}
+
+function isValidChordLoose(token: string): boolean {
+  if (!token) return false
+  const normalized = normalizeChordToken(token)
+  return isValidChord(normalized)
+}
+
+function normalizeChordToken(token: string): string {
+  // Rozpoznaj root + modifier + bass
+  // Próbujemy: 2-znakowy root (Cis, Dis, Fis...) lub 1-znakowy (a, e, H...)
+  const match = token.match(/^([A-Ha-h](?:is|es|[b#])?)((?:maj7|maj9|maj|min|m|sus2|sus4|sus|add9|add11|add|dim7|dim|aug|7|9|11|13|6)*)(?:\/([A-Ha-h](?:is|es|[b#])?))?$/)
+  if (!match) return token
+
+  const [, rawRoot, modifier, rawBass] = match
+
+  const root = resolveRoot(rawRoot)
+  if (!root) return token
+
+  let result = root + (modifier ?? '')
+  if (rawBass) {
+    const bass = resolveRoot(rawBass)
+    result += '/' + (bass ?? rawBass)
+  }
+  return result
+}
+
+function resolveRoot(raw: string): string | null {
+  // Sprawdź mapę niestandardową
+  if (raw in NOTATION_MAP) return NOTATION_MAP[raw]
+  // Kapitalizuj pierwszą literę
+  const cap = raw.charAt(0).toUpperCase() + raw.slice(1)
+  if (cap in NOTATION_MAP) return NOTATION_MAP[cap]
+  if (cap in FLAT_TO_SHARP) return FLAT_TO_SHARP[cap as keyof typeof FLAT_TO_SHARP]
+  if (CHROMATIC.includes(cap as NoteNames)) return cap
+  return null
+}
+
 // Regex do rozpoznania pojedynczego akordu (bez spacji)
 const SINGLE_CHORD_REGEX = /^([A-G][b#]?)((?:maj7|maj9|maj|min|m|sus2|sus4|sus|add9|add11|add|dim7|dim|aug|7|9|11|13|6|b5|#5)*)(?:\/([A-G][b#]?))?$/
 
