@@ -199,71 +199,73 @@ export default function SongViewPage() {
 
       {uiVisible && (
         <div className="fixed bottom-0 left-0 right-0 z-20 bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800">
-          <div className="max-w-2xl mx-auto px-3 py-2 flex flex-col gap-2">
+          <div className="max-w-2xl mx-auto px-3 pt-2 pb-3 flex flex-col gap-2" onClick={e => e.stopPropagation()}>
 
-            <div className="flex items-center justify-between gap-1">
-              <div className="flex items-center gap-1">
+            {/* Wiersz 1: Tonacja | Capo */}
+            <div className="flex items-stretch gap-3">
+              <div className="flex-1 flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-800/60 rounded-xl px-2 py-1.5">
                 <button
                   onClick={e => { e.stopPropagation(); transposeBy(song.id, -1) }}
-                  className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-bold hover:bg-amber-100 dark:hover:bg-amber-900/30 active:scale-95 transition-transform"
+                  className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center font-bold text-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 active:scale-95 transition-transform"
                 >−</button>
-                <div className="text-center px-1 min-w-[56px]">
-                  {currentKey && (
-                    <>
-                      <p className="text-[10px] text-gray-400 leading-none">Tonacja</p>
-                      <p className="font-mono font-bold text-amber-500 text-lg leading-tight">{currentKey}</p>
-                      {song.originalKey && currentKey !== song.originalKey && (
-                        <p className="text-[10px] text-gray-400 leading-none">org: {song.originalKey}</p>
-                      )}
-                    </>
+                <div className="text-center min-w-[52px]">
+                  <p className="text-[10px] text-gray-400 leading-none mb-0.5">Tonacja</p>
+                  <p className="font-mono font-bold text-amber-500 text-xl leading-none">
+                    {currentKey ?? '—'}
+                  </p>
+                  {song.originalKey && currentKey !== song.originalKey && (
+                    <p className="text-[10px] text-gray-400 leading-none mt-0.5">({song.originalKey})</p>
                   )}
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); transposeBy(song.id, 1) }}
-                  className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-bold hover:bg-amber-100 dark:hover:bg-amber-900/30 active:scale-95 transition-transform"
+                  className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center font-bold text-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 active:scale-95 transition-transform"
                 >+</button>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex-1 flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-800/60 rounded-xl px-2 py-1.5">
                 <button
                   onClick={e => { e.stopPropagation(); changeCapo(song.id, -1) }}
-                  className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-bold hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
+                  className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center font-bold text-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
                 >−</button>
-                <div className="text-center px-1 min-w-[52px]">
-                  <p className="text-[10px] text-gray-400 leading-none">Capo</p>
-                  <p className="font-mono font-bold text-blue-500 dark:text-blue-400 text-lg leading-tight">{song.capo}</p>
+                <div className="text-center min-w-[44px]">
+                  <p className="text-[10px] text-gray-400 leading-none mb-0.5">Capo</p>
+                  <p className="font-mono font-bold text-blue-500 dark:text-blue-400 text-xl leading-none">{song.capo}</p>
                   {shapeKey && song.capo > 0 && (
-                    <p className="text-[10px] text-gray-400 leading-none">= {shapeKey}</p>
+                    <p className="text-[10px] text-gray-400 leading-none mt-0.5">={shapeKey}</p>
                   )}
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); changeCapo(song.id, 1) }}
-                  className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-bold hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
+                  className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center font-bold text-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
                 >+</button>
               </div>
-
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={e => { e.stopPropagation(); setFontSize(f => Math.max(12, f - 2)) }}
-                  className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center active:scale-95 transition-transform"
-                ><Type size={11} /></button>
-                <span className="text-xs text-gray-500 w-6 text-center tabular-nums">{fontSize}</span>
-                <button
-                  onClick={e => { e.stopPropagation(); setFontSize(f => Math.min(40, f + 2)) }}
-                  className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center active:scale-95 transition-transform"
-                ><Type size={15} /></button>
-              </div>
-
-              <button
-                onClick={e => { e.stopPropagation(); document.documentElement.requestFullscreen?.() }}
-                className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center flex-shrink-0"
-              ><Maximize2 size={15} className="text-gray-400" /></button>
             </div>
 
-            <div className="flex items-center gap-2 pb-1" onClick={e => e.stopPropagation()}>
+            {/* Wiersz 2: Font size | Fullscreen */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/60 rounded-xl px-3 py-1.5 flex-1">
+                <button
+                  onClick={e => { e.stopPropagation(); setFontSize(f => Math.max(12, f - 2)) }}
+                  className="w-8 h-8 rounded-lg bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center active:scale-95 transition-transform"
+                ><Type size={11} /></button>
+                <span className="font-mono font-bold text-gray-600 dark:text-gray-300 text-sm tabular-nums flex-1 text-center">{fontSize}</span>
+                <button
+                  onClick={e => { e.stopPropagation(); setFontSize(f => Math.min(40, f + 2)) }}
+                  className="w-8 h-8 rounded-lg bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center active:scale-95 transition-transform"
+                ><Type size={15} /></button>
+              </div>
+              <button
+                onClick={e => { e.stopPropagation(); document.documentElement.requestFullscreen?.() }}
+                className="w-11 h-11 rounded-xl bg-gray-50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center flex-shrink-0"
+              ><Maximize2 size={16} className="text-gray-400" /></button>
+            </div>
+
+            {/* Wiersz 3: Auto scroll */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={startWithCountdown}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm transition-colors flex-shrink-0 ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-sm transition-colors flex-shrink-0 ${
                   isScrolling
                     ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
                     : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
@@ -272,25 +274,22 @@ export default function SongViewPage() {
                 {isScrolling ? <Pause size={15} /> : <Play size={15} />}
                 {isScrolling ? 'Stop' : 'Auto'}
               </button>
-
-              <div className="flex items-center gap-1.5 flex-1">
-                <button
-                  onClick={() => handleSpeedChange(Math.max(1, scrollSpeed - 5))}
-                  className="w-7 h-7 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
-                ><ChevronDown size={14} /></button>
-                <input
-                  type="range"
-                  min={1} max={100}
-                  value={scrollSpeed}
-                  onChange={e => handleSpeedChange(Number(e.target.value))}
-                  className="flex-1 accent-amber-500 h-1.5"
-                />
-                <button
-                  onClick={() => handleSpeedChange(Math.min(100, scrollSpeed + 5))}
-                  className="w-7 h-7 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
-                ><ChevronUp size={14} /></button>
-                <span className="text-xs text-gray-400 w-6 text-right tabular-nums">{scrollSpeed}</span>
-              </div>
+              <button
+                onClick={() => handleSpeedChange(Math.max(1, scrollSpeed - 5))}
+                className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center flex-shrink-0"
+              ><ChevronDown size={14} /></button>
+              <input
+                type="range"
+                min={1} max={100}
+                value={scrollSpeed}
+                onChange={e => handleSpeedChange(Number(e.target.value))}
+                className="flex-1 accent-amber-500 h-1.5"
+              />
+              <button
+                onClick={() => handleSpeedChange(Math.min(100, scrollSpeed + 5))}
+                className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center flex-shrink-0"
+              ><ChevronUp size={14} /></button>
+              <span className="text-xs text-gray-400 w-7 text-right tabular-nums">{scrollSpeed}</span>
             </div>
 
           </div>

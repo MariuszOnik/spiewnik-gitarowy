@@ -26,7 +26,7 @@ function parseChordSegments(chordLine: string, lyricLine: string): Segment[] {
     }
   }
 
-  // Snap each chord position to nearest word boundary (≤ chord pos)
+  // Snap each chord position to nearest word boundary (<= chord pos)
   function snapToWord(pos: number): number {
     let best = 0
     for (const ws of wordStarts) {
@@ -88,7 +88,7 @@ export default function SongRenderer({ content, fontSize }: Props) {
       i++; continue
     }
 
-    // Nagłówek sekcji [Verse 1]
+    // Naglowek sekcji [Verse 1]
     if (/^\[.+\]$/.test(trimmed) && !trimmed.slice(1, -1).match(/^[A-G][b#]?/)) {
       elements.push(
         <p key={i} className="font-bold uppercase tracking-widest mt-4 mb-1"
@@ -99,17 +99,39 @@ export default function SongRenderer({ content, fontSize }: Props) {
       i++; continue
     }
 
-    // Linia akordów
+    // Linie akordow - zbierz wszystkie kolejne
     if (isChordLine(origTrimmed)) {
-      const nextOrigLine = originalLines[i + 1]
-      const nextDispLine = lines[i + 1]
-      const hasLyric = nextOrigLine !== undefined
-        && nextOrigLine.trim()
-        && !isChordLine(nextOrigLine.trim())
+      const chordLines: string[] = [trimmed]
+      let j = i + 1
+      while (
+        j < lines.length &&
+        lines[j].trim() &&
+        isChordLine((originalLines[j] ?? lines[j]).trim())
+      ) {
+        chordLines.push(lines[j].trim())
+        j++
+      }
+
+      const nextOrigLine = originalLines[j]
+      const nextDispLine = lines[j]
+      const hasLyric = nextDispLine !== undefined
+        && nextDispLine.trim()
+        && !isChordLine((nextOrigLine ?? nextDispLine).trim())
 
       if (hasLyric) {
-        // Inline akord+tekst: każdy akord "przykleja się" do swojego fragmentu
-        const segments = parseChordSegments(trimmed, nextDispLine)
+        // Poprzednie linie akordow (jesli wiecej niz 1) wyswietl osobno
+        for (let k = 0; k < chordLines.length - 1; k++) {
+          elements.push(
+            <div key={`chord-pre-${i}-${k}`}
+                 className="font-mono font-bold whitespace-pre-wrap"
+                 style={{ fontSize, color: chordColor }}>
+              {chordLines[k]}
+            </div>
+          )
+        }
+        // Ostatnia linia akordow inline z tekstem
+        const lastChordLine = chordLines[chordLines.length - 1]
+        const segments = parseChordSegments(lastChordLine, nextDispLine)
         elements.push(
           <div key={i} className="mb-2">
             {segments.map((seg, si) => (
@@ -127,23 +149,26 @@ export default function SongRenderer({ content, fontSize }: Props) {
                   </span>
                 )}
                 <span style={{ fontSize, color: lyricsColor || undefined }}>
-                  {seg.text || ' '}
+                  {seg.text || ' '}
                 </span>
               </span>
             ))}
           </div>
         )
-        i += 2; continue
+        i = j + 1; continue
       }
 
-      // Linia akordów bez tekstu
-      elements.push(
-        <div key={i} className="font-mono font-bold whitespace-pre-wrap mb-2"
-             style={{ fontSize, color: chordColor }}>
-          {trimmed}
-        </div>
-      )
-      i++; continue
+      // Linie akordow bez tekstu
+      for (let k = 0; k < chordLines.length; k++) {
+        elements.push(
+          <div key={`chord-${i}-${k}`}
+               className="font-mono font-bold whitespace-pre-wrap mb-1"
+               style={{ fontSize, color: chordColor }}>
+            {chordLines[k]}
+          </div>
+        )
+      }
+      i = j; continue
     }
 
     // Format inline [Akord]tekst
@@ -171,7 +196,7 @@ export default function SongRenderer({ content, fontSize }: Props) {
       i++; continue
     }
 
-    // Zwykła linia tekstu
+    // Zwykla linia tekstu
     elements.push(
       <p key={i} className="leading-snug mb-1 whitespace-pre-wrap"
          style={{ fontSize, color: lyricsColor || undefined }}>
