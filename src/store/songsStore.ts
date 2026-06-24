@@ -21,7 +21,6 @@ interface SongsState {
   setFilterGenre: (g: Genre | '') => void
   setFilterLanguage: (l: Language | '') => void
   setFilterKey: (k: NoteNames | '') => void
-  getFiltered: () => Song[]
 }
 
 function now() { return Date.now() }
@@ -82,19 +81,4 @@ export const useSongsStore = create<SongsState>()((set, get) => ({
   setFilterGenre: (filterGenre) => set({ filterGenre }),
   setFilterLanguage: (filterLanguage) => set({ filterLanguage }),
   setFilterKey: (filterKey) => set({ filterKey }),
-
-  getFiltered: () => {
-    const { songs, searchQuery, filterGenre, filterLanguage, filterKey } = get()
-    const q = searchQuery.toLowerCase()
-    return songs.filter(song => {
-      if (filterGenre && song.genre !== filterGenre) return false
-      if (filterLanguage && song.language !== filterLanguage) return false
-      if (filterKey && song.currentKey !== filterKey && song.originalKey !== filterKey) return false
-      if (q) {
-        const haystack = [song.title, song.artist, ...(song.tags ?? []), song.content].join(' ').toLowerCase()
-        if (!haystack.includes(q)) return false
-      }
-      return true
-    })
-  },
 }))
