@@ -4,10 +4,10 @@ import { useSettingsStore } from '@/store/settingsStore'
 interface Props {
   content: string
   fontSize: number
-  chordOffset?: number
+  chordOffset?: number  // kept for API compat, not applied to rendering
 }
 
-export default function SongRenderer({ content, fontSize, chordOffset = 0 }: Props) {
+export default function SongRenderer({ content, fontSize }: Props) {
   const chordNotation = useSettingsStore(s => s.chordNotation)
   const chordColor = useSettingsStore(s => s.chordColor)
   const lyricsColor = useSettingsStore(s => s.lyricsColor)
