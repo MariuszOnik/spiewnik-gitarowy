@@ -109,7 +109,7 @@ export default function SongListPage() {
           <SearchBar />
         </div>
 
-        <main className="pb-8">
+        <main className="pb-4">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
               <Music2 size={40} className="animate-pulse text-amber-500" />
@@ -135,6 +135,12 @@ export default function SongListPage() {
             </div>
           )}
         </main>
+
+        <footer className="py-4 text-center border-t border-gray-100 dark:border-gray-800">
+          <p className="text-xs text-gray-300 dark:text-gray-600">
+            Created by Mariusz Onik & Claude AI
+          </p>
+        </footer>
       </div>
     </div>
   )

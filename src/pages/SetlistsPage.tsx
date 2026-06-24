@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, ListMusic, Trash2, ArrowLeft } from 'lucide-react'
+import { Plus, ListMusic, Trash2, ArrowLeft, LogIn } from 'lucide-react'
 import { useSetlistStore } from '@/store/setlistStore'
+import { useAuthStore } from '@/store/authStore'
 
 export default function SetlistsPage() {
   const navigate = useNavigate()
   const { setlists, loading, loadSetlists, createSetlist, deleteSetlist } = useSetlistStore()
+  const user = useAuthStore(s => s.user)
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
 
@@ -28,17 +30,25 @@ export default function SetlistsPage() {
         </button>
         <div className="flex-1">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Setlisty</h1>
-          <p className="text-xs text-gray-400">Twoje listy do grania</p>
+          <p className="text-xs text-gray-400">Wspólne listy do grania</p>
         </div>
-        <button
-          onClick={() => setCreating(true)}
-          className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold text-sm"
-        >
-          <Plus size={16} /> Nowa
-        </button>
+        {user ? (
+          <button
+            onClick={() => setCreating(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold text-sm"
+          >
+            <Plus size={16} /> Nowa
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate('/auth')}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl text-sm text-gray-500"
+          >
+            <LogIn size={16} /> Zaloguj
+          </button>
+        )}
       </header>
 
-      {/* Formularz nowej setlisty */}
       {creating && (
         <div className="mb-4 p-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 flex gap-2">
           <input
@@ -61,10 +71,16 @@ export default function SetlistsPage() {
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
             <ListMusic size={48} className="text-gray-200 dark:text-gray-700" />
             <p className="font-medium">Brak setlist</p>
-            <p className="text-sm text-center">Stwórz listę piosenek na ognisko,<br />próbę lub koncert</p>
-            <button onClick={() => setCreating(true)} className="mt-2 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold">
-              + Utwórz pierwszą setlistę
-            </button>
+            {user ? (
+              <>
+                <p className="text-sm text-center">Stwórz listę piosenek na ognisko,<br />próbę lub koncert</p>
+                <button onClick={() => setCreating(true)} className="mt-2 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold">
+                  + Utwórz pierwszą setlistę
+                </button>
+              </>
+            ) : (
+              <p className="text-sm text-center">Zaloguj się, żeby tworzyć setlisty</p>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -81,12 +97,14 @@ export default function SetlistsPage() {
                   <p className="font-semibold text-gray-900 dark:text-white truncate">{sl.name}</p>
                   <p className="text-xs text-gray-400">{sl.songIds.length} {sl.songIds.length === 1 ? 'piosenka' : 'piosenek'}</p>
                 </div>
-                <button
-                  onClick={e => { e.stopPropagation(); deleteSetlist(sl.id) }}
-                  className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
+                {user && (
+                  <button
+                    onClick={e => { e.stopPropagation(); deleteSetlist(sl.id) }}
+                    className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             ))}
           </div>

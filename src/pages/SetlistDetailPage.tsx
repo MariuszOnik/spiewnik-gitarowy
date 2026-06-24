@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, Plus, X, Play, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
 import { useSetlistStore } from '@/store/setlistStore'
 import { useSongsStore } from '@/store/songsStore'
+import { useAuthStore } from '@/store/authStore'
 
 export default function SetlistDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -11,6 +12,7 @@ export default function SetlistDetailPage() {
   const { loadSetlists, removeSongFromSetlist, moveSong, updateSetlist } = useSetlistStore()
   const songs = useSongsStore(s => s.songs)
   const addSongToSetlist = useSetlistStore(s => s.addSongToSetlist)
+  const user = useAuthStore(s => s.user)
 
   const [showPicker, setShowPicker] = useState(false)
   const [pickerQuery, setPickerQuery] = useState('')
@@ -44,7 +46,6 @@ export default function SetlistDetailPage() {
     setEditingName(false)
   }
 
-  // Tryb odtwarzania - nawiguj po piosenkach
   if (playIdx !== null) {
     const song = setlistSongs[playIdx]
     if (!song) { setPlayIdx(null); return null }
@@ -58,12 +59,8 @@ export default function SetlistDetailPage() {
             <p className="text-xs text-gray-400">{setlist.name} • {playIdx + 1}/{setlistSongs.length}</p>
             <p className="font-bold truncate">{song.title}</p>
           </div>
-          <button
-            onClick={() => navigate(`/song/${song.id}`)}
-            className="text-xs text-amber-500 underline"
-          >Otwórz</button>
+          <button onClick={() => navigate(`/song/${song.id}`)} className="text-xs text-amber-500 underline">Otwórz</button>
         </header>
-        {/* Mini-renderer */}
         <div className="flex-1 px-4 py-4 overflow-y-auto">
           <pre className="font-mono text-sm whitespace-pre-wrap text-gray-800 dark:text-gray-200">{song.content}</pre>
         </div>
@@ -95,7 +92,7 @@ export default function SetlistDetailPage() {
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1 min-w-0">
-          {editingName ? (
+          {editingName && user ? (
             <input
               autoFocus value={nameValue}
               onChange={e => setNameValue(e.target.value)}
@@ -104,9 +101,12 @@ export default function SetlistDetailPage() {
               className="font-bold text-xl bg-transparent outline-none border-b border-amber-500 w-full text-gray-900 dark:text-white"
             />
           ) : (
-            <button onClick={() => setEditingName(true)} className="flex items-center gap-1.5 group text-left">
+            <button
+              onClick={() => user && setEditingName(true)}
+              className={`flex items-center gap-1.5 text-left ${user ? 'group' : ''}`}
+            >
               <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate">{setlist.name}</h1>
-              <Pencil size={14} className="text-gray-300 group-hover:text-amber-500 flex-shrink-0" />
+              {user && <Pencil size={14} className="text-gray-300 group-hover:text-amber-500 flex-shrink-0" />}
             </button>
           )}
           <p className="text-xs text-gray-400">{setlistSongs.length} piosenek</p>
@@ -120,24 +120,26 @@ export default function SetlistDetailPage() {
               <Play size={15} /> Graj
             </button>
           )}
-          <button
-            onClick={() => setShowPicker(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl font-semibold text-sm"
-          >
-            <Plus size={15} /> Dodaj
-          </button>
+          {user && (
+            <button
+              onClick={() => setShowPicker(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl font-semibold text-sm"
+            >
+              <Plus size={15} /> Dodaj
+            </button>
+          )}
         </div>
       </header>
 
-      {/* Lista piosenek w setliście */}
       <main className="flex-1 pb-8">
         {setlistSongs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
             <p className="font-medium">Setlista jest pusta</p>
-            <p className="text-sm">Dodaj piosenki klikając Dodaj</p>
-            <button onClick={() => setShowPicker(true)} className="mt-2 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold">
-              + Dodaj piosenkę
-            </button>
+            {user && (
+              <button onClick={() => setShowPicker(true)} className="mt-2 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold">
+                + Dodaj piosenkę
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -146,26 +148,25 @@ export default function SetlistDetailPage() {
                 key={song.id}
                 className="flex items-center gap-3 px-3 py-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800"
               >
-                {/* Numer */}
                 <span className="text-sm font-mono font-bold text-gray-300 dark:text-gray-600 w-6 text-center flex-shrink-0">
                   {idx + 1}
                 </span>
 
-                {/* Przesuwanie */}
-                <div className="flex flex-col gap-0.5 flex-shrink-0">
-                  <button
-                    onClick={() => id && moveSong(id, idx, Math.max(0, idx - 1))}
-                    disabled={idx === 0}
-                    className="w-5 h-5 flex items-center justify-center text-gray-300 hover:text-amber-500 disabled:opacity-20"
-                  >▲</button>
-                  <button
-                    onClick={() => id && moveSong(id, idx, Math.min(setlistSongs.length - 1, idx + 1))}
-                    disabled={idx === setlistSongs.length - 1}
-                    className="w-5 h-5 flex items-center justify-center text-gray-300 hover:text-amber-500 disabled:opacity-20"
-                  >▼</button>
-                </div>
+                {user && (
+                  <div className="flex flex-col gap-0.5 flex-shrink-0">
+                    <button
+                      onClick={() => id && moveSong(id, idx, Math.max(0, idx - 1))}
+                      disabled={idx === 0}
+                      className="w-5 h-5 flex items-center justify-center text-gray-300 hover:text-amber-500 disabled:opacity-20"
+                    >▲</button>
+                    <button
+                      onClick={() => id && moveSong(id, idx, Math.min(setlistSongs.length - 1, idx + 1))}
+                      disabled={idx === setlistSongs.length - 1}
+                      className="w-5 h-5 flex items-center justify-center text-gray-300 hover:text-amber-500 disabled:opacity-20"
+                    >▼</button>
+                  </div>
+                )}
 
-                {/* Info */}
                 <div
                   className="flex-1 min-w-0 cursor-pointer"
                   onClick={() => navigate(`/song/${song.id}`)}
@@ -180,19 +181,20 @@ export default function SetlistDetailPage() {
                   </span>
                 )}
 
-                <button
-                  onClick={() => id && removeSongFromSetlist(id, song.id)}
-                  className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 hover:text-red-400 transition-colors flex-shrink-0"
-                >
-                  <X size={16} />
-                </button>
+                {user && (
+                  <button
+                    onClick={() => id && removeSongFromSetlist(id, song.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 hover:text-red-400 transition-colors flex-shrink-0"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
         )}
       </main>
 
-      {/* Picker - dodaj piosenkę */}
       {showPicker && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end" onClick={() => setShowPicker(false)}>
           <div
@@ -220,9 +222,7 @@ export default function SetlistDetailPage() {
                 availableSongs.map(song => (
                   <button
                     key={song.id}
-                    onClick={async () => {
-                      if (id) await addSongToSetlist(id, song.id)
-                    }}
+                    onClick={async () => { if (id) await addSongToSetlist(id, song.id) }}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 text-left transition-colors"
                   >
                     <Plus size={16} className="text-amber-500 flex-shrink-0" />
