@@ -12,6 +12,7 @@ export default function SongViewPage() {
   const navigate = useNavigate()
   const songs = useSongsStore(s => s.songs)
   const transposeBy = useSongsStore(s => s.transposeBy)
+  const changeCapo = useSongsStore(s => s.changeCapo)
   const toggleFavorite = useSongsStore(s => s.toggleFavorite)
   const updateSong = useSongsStore(s => s.updateSong)
   const { defaultFontSize, defaultScrollSpeed } = useSettingsStore()
@@ -154,13 +155,24 @@ export default function SongViewPage() {
                 >+</button>
               </div>
 
-              {/* Capo */}
-              {song.capo > 0 && shapeKey && (
-                <div className="text-center bg-gray-50 dark:bg-gray-800 rounded-lg px-2 py-1 flex-shrink-0">
-                  <p className="text-[10px] text-gray-400 leading-none">Capo {song.capo}</p>
-                  <p className="text-xs font-mono font-bold text-gray-700 dark:text-gray-200">= {shapeKey}</p>
+              {/* Capo +/- */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={e => { e.stopPropagation(); changeCapo(song.id, -1) }}
+                  className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-bold hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
+                >−</button>
+                <div className="text-center px-1 min-w-[52px]">
+                  <p className="text-[10px] text-gray-400 leading-none">Capo</p>
+                  <p className="font-mono font-bold text-blue-500 dark:text-blue-400 text-lg leading-tight">{song.capo}</p>
+                  {shapeKey && song.capo > 0 && (
+                    <p className="text-[10px] text-gray-400 leading-none">= {shapeKey}</p>
+                  )}
                 </div>
-              )}
+                <button
+                  onClick={e => { e.stopPropagation(); changeCapo(song.id, 1) }}
+                  className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-bold hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-95 transition-transform"
+                >+</button>
+              </div>
 
               {/* Czcionka */}
               <div className="flex items-center gap-1">

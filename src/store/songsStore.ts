@@ -17,6 +17,7 @@ interface SongsState {
   deleteSong: (id: string) => Promise<void>
   toggleFavorite: (id: string) => Promise<void>
   transposeBy: (id: string, semitones: number) => Promise<void>
+  changeCapo: (id: string, delta: number) => Promise<void>
   setSearch: (q: string) => void
   setFilterGenre: (g: Genre | '') => void
   setFilterLanguage: (l: Language | '') => void
@@ -68,13 +69,22 @@ export const useSongsStore = create<SongsState>()((set, get) => ({
     const song = get().songs.find(s => s.id === id)
     if (!song) return
     const newContent = transposeContent(song.content, semitones)
-    const currentKey = song.currentKey
-      ? getRealKey(song.currentKey, 0)
-      : song.originalKey
-    const newCurrentKey = currentKey
-      ? getRealKey(currentKey, semitones)
-      : undefined
+    const currentKey = song.currentKey ?? song.originalKey
+    const newCurrentKey = currentKey ? getRealKey(currentKey, semitones) : undefined
     await get().updateSong(id, { content: newContent, currentKey: newCurrentKey })
+  },
+
+  // Zmiana kapodastra: capo +1 → akordy -1 półton (ten sam dźwięk, inny kształt)
+  changeCapo: async (id, delta) => {
+    const song = get().songs.find(s => s.id === id)
+    if (!song) return
+    const newCapo = Math.max(0, Math.min(11, song.capo + delta))
+    const capoDelta = newCapo - song.capo
+    if (capoDelta === 0) return
+    const newContent = transposeContent(song.content, -capoDelta)
+    const currentKey = song.currentKey ?? song.originalKey
+    const newCurrentKey = currentKey ? getRealKey(currentKey, 0) : undefined
+    await get().updateSong(id, { capo: newCapo, content: newContent, currentKey: newCurrentKey })
   },
 
   setSearch: (searchQuery) => set({ searchQuery }),
