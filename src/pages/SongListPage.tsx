@@ -71,9 +71,9 @@ export default function SongListPage() {
               <button
                 onClick={() => navigate('/profile')}
                 className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0 hover:bg-amber-600 transition-colors"
-                title={user.email ?? 'Profil'}
+                title={user.user_metadata?.username ?? user.email ?? 'Profil'}
               >
-                {user.email?.slice(0, 2).toUpperCase()}
+                {(user.user_metadata?.username ?? user.email ?? '??').slice(0, 2).toUpperCase()}
               </button>
             ) : (
               <button

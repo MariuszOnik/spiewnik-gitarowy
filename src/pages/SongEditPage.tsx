@@ -83,9 +83,10 @@ export default function SongEditPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing?.id])
 
-  const authorName = user?.email
-    ? (user.email.includes('@') ? user.email.split('@')[0] : user.email)
-    : ''
+  const authorName: string =
+    user?.user_metadata?.username ||
+    (user?.email?.includes('@') ? user.email.split('@')[0] : user?.email) ||
+    ''
 
   const buildPayload = useCallback(() => ({
     title: title.trim() || 'Bez tytułu',

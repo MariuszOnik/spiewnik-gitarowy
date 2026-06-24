@@ -33,7 +33,8 @@ export default function ProfilePage() {
     navigate('/')
   }
 
-  const initials = user.email?.slice(0, 2).toUpperCase() ?? '??'
+  const displayName = user.user_metadata?.username ?? user.email ?? '??'
+  const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col max-w-2xl mx-auto px-4">
@@ -50,8 +51,8 @@ export default function ProfilePage() {
           {initials}
         </div>
         <div>
-          <p className="font-semibold text-gray-900 dark:text-white">{user.email}</p>
-          <p className="text-sm text-gray-400 mt-0.5">Konto aktywne</p>
+          <p className="font-semibold text-gray-900 dark:text-white">{displayName}</p>
+          <p className="text-sm text-gray-400 mt-0.5">{user.email}</p>
         </div>
       </div>
 

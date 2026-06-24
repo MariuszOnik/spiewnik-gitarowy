@@ -8,6 +8,7 @@ export default function AuthPage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -31,6 +32,10 @@ export default function AuthPage() {
       setError('Hasło musi mieć co najmniej 6 znaków')
       return
     }
+    if (tab === 'register' && !username.trim()) {
+      setError('Wpisz nazwę użytkownika')
+      return
+    }
 
     setLoading(true)
 
@@ -40,7 +45,7 @@ export default function AuthPage() {
       await syncAfterLogin()
       navigate('/')
     } else {
-      const err = await signUp(email, password)
+      const err = await signUp(email, password, username)
       if (err) { setError(err); setLoading(false); return }
       setInfo('Sprawdź email i kliknij link aktywacyjny, potem wróć i zaloguj się.')
       setTab('login')
@@ -53,16 +58,14 @@ export default function AuthPage() {
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
 
-        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-amber-500 flex items-center justify-center mb-3">
             <Guitar size={32} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Śpiewnik Gitarowy</h1>
-          <p className="text-sm text-gray-500 mt-1">Zaloguj się, żeby synchronizować piosenki</p>
+          <p className="text-sm text-gray-500 mt-1">Zaloguj się, żeby dodawać piosenki</p>
         </div>
 
-        {/* Tabs */}
         <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
           {(['login', 'register'] as const).map(t => (
             <button
@@ -79,7 +82,6 @@ export default function AuthPage() {
           ))}
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
             type="email"
@@ -89,6 +91,16 @@ export default function AuthPage() {
             required
             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
+          {tab === 'register' && (
+            <input
+              type="text"
+              placeholder="Nazwa użytkownika (widoczna przy piosenkach)"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              required
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+          )}
           <input
             type="password"
             placeholder="Hasło (min. 6 znaków)"
@@ -125,7 +137,6 @@ export default function AuthPage() {
           </button>
         </form>
 
-        {/* Back */}
         <button
           onClick={() => navigate('/')}
           className="mt-6 flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mx-auto"

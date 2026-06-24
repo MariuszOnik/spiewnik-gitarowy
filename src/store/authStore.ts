@@ -7,7 +7,7 @@ interface AuthState {
   loading: boolean
   init: () => Promise<void>
   signIn: (email: string, password: string) => Promise<string | null>
-  signUp: (email: string, password: string) => Promise<string | null>
+  signUp: (email: string, password: string, username: string) => Promise<string | null>
   signOut: () => Promise<void>
 }
 
@@ -32,9 +32,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
     return error?.message ?? null
   },
 
-  signUp: async (email, password) => {
+  signUp: async (email, password, username) => {
     if (!supabase) return 'Supabase nie jest skonfigurowany'
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { username: username.trim() || email.split('@')[0] } },
+    })
     return error?.message ?? null
   },
 
