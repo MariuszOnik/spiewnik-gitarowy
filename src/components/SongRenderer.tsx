@@ -57,8 +57,8 @@ export default function SongRenderer({ content, fontSize, chordOffset = 0 }: Pro
       elements.push(
         <div key={i} style={{ marginBottom: hasLyric ? 0 : 8 }}>
           <div
-            className="font-mono font-bold leading-none mb-0.5 whitespace-pre overflow-x-auto"
-            style={{ fontSize, color: chordColor, marginLeft: chordOffset || undefined }}
+            className="font-mono font-bold leading-none mb-0.5 whitespace-pre-wrap"
+            style={{ fontSize, color: chordColor }}
           >
             {trimmed}
           </div>
@@ -80,8 +80,8 @@ export default function SongRenderer({ content, fontSize, chordOffset = 0 }: Pro
       elements.push(
         <div key={i} className="mb-1">
           <div
-            className="font-mono font-bold leading-none whitespace-pre"
-            style={{ fontSize: fontSize * 0.85, color: chordColor, marginLeft: chordOffset || undefined }}
+            className="font-mono font-bold leading-none whitespace-pre-wrap"
+            style={{ fontSize: fontSize * 0.85, color: chordColor }}
           >
             {tokens.map((t, ti) =>
               t.type === 'chord'
