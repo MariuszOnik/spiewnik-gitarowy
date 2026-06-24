@@ -10,8 +10,8 @@ export function useAutoScroll({ speed, onStop }: Options) {
   const rafRef = useRef<number | null>(null)
   const accRef = useRef(0)   // subpixel accumulator
 
-  // px/frame = speed skalowane: 1→0.2px, 100→4px
-  const pxPerFrame = (speed / 100) * 3.8 + 0.2
+  // px/frame: 1→0.03px (~2px/s), 50→0.27px (~16px/s), 100→0.5px (~30px/s)
+  const pxPerFrame = (speed / 100) * 0.47 + 0.03
 
   const stop = useCallback(() => {
     setIsScrolling(false)

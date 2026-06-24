@@ -4,6 +4,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 export default defineConfig({
+  server: {
+    host: true,   // nasłuchuj na 0.0.0.0 – dostępne z telefonu w tej samej sieci
+    port: 5173,
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

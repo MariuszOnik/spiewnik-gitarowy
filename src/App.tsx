@@ -1,15 +1,19 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useSettingsStore } from '@/store/settingsStore'
+import { useAuthStore } from '@/store/authStore'
 import SongListPage from '@/pages/SongListPage'
 import SongViewPage from '@/pages/SongViewPage'
 import SongEditPage from '@/pages/SongEditPage'
 import StagePage from '@/pages/StagePage'
 import SetlistsPage from '@/pages/SetlistsPage'
 import SetlistDetailPage from '@/pages/SetlistDetailPage'
+import AuthPage from '@/pages/AuthPage'
+import ProfilePage from '@/pages/ProfilePage'
 
 export default function App() {
   const { theme } = useSettingsStore()
+  const initAuth = useAuthStore(s => s.init)
 
   useEffect(() => {
     const root = document.documentElement
@@ -23,6 +27,10 @@ export default function App() {
     }
   }, [theme])
 
+  useEffect(() => {
+    initAuth()
+  }, [initAuth])
+
   return (
     <BrowserRouter>
       <Routes>
@@ -33,6 +41,8 @@ export default function App() {
         <Route path="/song/:id/stage" element={<StagePage />} />
         <Route path="/setlists" element={<SetlistsPage />} />
         <Route path="/setlist/:id" element={<SetlistDetailPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

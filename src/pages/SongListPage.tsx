@@ -1,9 +1,10 @@
-import { Plus, Music2, Moon, Sun, Guitar, ListMusic } from 'lucide-react'
+import { Plus, Music2, Moon, Sun, Guitar, ListMusic, User, LogIn } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMemo } from 'react'
 import { useInitDb } from '@/hooks/useInitDb'
 import { useSongsStore } from '@/store/songsStore'
 import { useSettingsStore } from '@/store/settingsStore'
+import { useAuthStore } from '@/store/authStore'
 import SongCard from '@/components/SongCard'
 import SearchBar from '@/components/SearchBar'
 
@@ -31,6 +32,7 @@ export default function SongListPage() {
     })
   }, [songs, searchQuery, filterGenre, filterLanguage, filterKey])
   const { theme, setTheme } = useSettingsStore()
+  const user = useAuthStore(s => s.user)
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
 
@@ -51,6 +53,23 @@ export default function SongListPage() {
           >
             <ListMusic size={20} className="text-blue-500" />
           </button>
+          {user ? (
+            <button
+              onClick={() => navigate('/profile')}
+              className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0 hover:bg-amber-600 transition-colors"
+              title={user.email ?? 'Profil'}
+            >
+              {user.email?.slice(0, 2).toUpperCase()}
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/auth')}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              title="Zaloguj się"
+            >
+              <LogIn size={20} className="text-gray-400" />
+            </button>
+          )}
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

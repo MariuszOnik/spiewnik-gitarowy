@@ -1,10 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { ArrowLeft, Edit3, Maximize2, Zap, Heart, Type, Play, Pause, ChevronUp, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Edit3, Maximize2, Zap, Heart, Type, Play, Pause, ChevronUp, ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { useSongsStore } from '@/store/songsStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { getShapeKey } from '@/utils/chords'
 import SongRenderer from '@/components/SongRenderer'
+import SongSettingsModal from '@/components/SongSettingsModal'
 import { useAutoScroll } from '@/hooks/useAutoScroll'
 
 export default function SongViewPage() {
@@ -15,12 +16,13 @@ export default function SongViewPage() {
   const changeCapo = useSongsStore(s => s.changeCapo)
   const toggleFavorite = useSongsStore(s => s.toggleFavorite)
   const updateSong = useSongsStore(s => s.updateSong)
-  const { defaultFontSize, defaultScrollSpeed, chordNotation, setChordNotation } = useSettingsStore()
+  const { defaultFontSize, defaultScrollSpeed, chordNotation, setChordNotation, bgColor } = useSettingsStore()
 
   const song = songs.find(s => s.id === id)
   const [fontSize, setFontSize] = useState(song?.fontSize ?? defaultFontSize)
   const [scrollSpeed, setScrollSpeed] = useState(song?.scrollSpeed ?? defaultScrollSpeed)
   const [uiVisible, setUiVisible] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [countdown, setCountdown] = useState<number | null>(null)
   const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -82,7 +84,7 @@ export default function SongViewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col" style={bgColor ? { backgroundColor: bgColor } : undefined}>
 
       {/* Countdown overlay */}
       {countdown !== null && (
@@ -115,6 +117,13 @@ export default function SongViewPage() {
             >
               {chordNotation === 'european' ? 'H' : 'B'}
             </button>
+            <button
+              onClick={e => { e.stopPropagation(); setSettingsOpen(true) }}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+              title="Ustawienia wyświetlania"
+            >
+              <SlidersHorizontal size={20} className="text-gray-500" />
+            </button>
             <button onClick={() => navigate(`/song/${song.id}/edit`)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0">
               <Edit3 size={20} className="text-gray-500" />
             </button>
@@ -122,12 +131,21 @@ export default function SongViewPage() {
         </header>
       )}
 
+      {/* Modal ustawień */}
+      {settingsOpen && (
+        <SongSettingsModal
+          songId={song.id}
+          chordOffset={song.chordOffset ?? 0}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
+
       {/* Treść - kliknięcie toggleuje UI */}
       <div
         className="flex-1 px-4 py-4 max-w-2xl mx-auto w-full"
         onClick={() => setUiVisible(v => !v)}
       >
-        <SongRenderer content={song.content} fontSize={fontSize} />
+        <SongRenderer content={song.content} fontSize={fontSize} chordOffset={song.chordOffset ?? 0} />
         <div className="h-40" />
       </div>
 

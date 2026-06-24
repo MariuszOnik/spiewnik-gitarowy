@@ -10,7 +10,7 @@ export function useInitDb() {
     async function init() {
       const count = await db.songs.count()
       if (count === 0) {
-        await db.songs.bulkAdd(SEED_SONGS)
+        await db.songs.bulkPut(SEED_SONGS)
       }
       await loadSongs()
     }

@@ -18,6 +18,7 @@ export interface Song {
   isFavorite: boolean
   scrollSpeed: number
   fontSize: number
+  chordOffset?: number   // przesunięcie poziome akordów w px (dla tej piosenki)
   createdAt: number
   updatedAt: number
 }
@@ -27,6 +28,9 @@ export interface UserSettings {
   defaultFontSize: number
   defaultScrollSpeed: number
   chordNotation: 'english' | 'european'  // english: C# B, european: Cis H
+  chordColor: string    // hex, domyślnie #f59e0b (amber-500)
+  lyricsColor: string  // hex, '' = auto (z motywu)
+  bgColor: string      // hex, '' = auto (z motywu)
 }
 
 export type ViewMode = 'list' | 'view' | 'edit' | 'stage'
