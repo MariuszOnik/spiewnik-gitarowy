@@ -105,7 +105,7 @@ tekst...`}
         <Section icon={<Play size={20} />} title="Auto-scroll">
           <p>Przycisk <strong>Auto-scroll</strong> uruchamia automatyczne przewijanie strony — przydatne podczas grania.</p>
           <p>Przycisk <strong>Tempo</strong> (<Code>−</Code> / <Code>+</Code>) reguluje prędkość przewijania (1–100).</p>
-          <p>Dotknij ekranu, żeby pokazać/ukryć pasek narzędzi podczas przewijania.</p>
+          <p>Dotknij ekranu (lub kliknij myszką) w dowolnym miejscu tekstu piosenki, żeby <strong>pokazać lub ukryć pasek narzędzi i nagłówek</strong> — przydatne podczas grania na scenie.</p>
           <p>Przycisk <Code>⚡</Code> otwiera <strong>tryb sceniczny</strong> — duża czcionka, ciemne tło, minimalistyczny widok.</p>
         </Section>
 

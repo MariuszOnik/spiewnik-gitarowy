@@ -19,6 +19,7 @@ export interface Song {
   scrollSpeed: number
   fontSize: number
   chordOffset?: number
+  transposeOffset?: number
   authorId?: string
   authorName?: string
   songKey?: string

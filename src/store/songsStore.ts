@@ -130,7 +130,8 @@ export const useSongsStore = create<SongsState>()((set, get) => ({
     const newContent = transposeContent(song.content, semitones)
     const currentKey = song.currentKey ?? song.originalKey
     const newCurrentKey = currentKey ? getRealKey(currentKey, semitones) : undefined
-    await get().updateSong(id, { content: newContent, currentKey: newCurrentKey })
+    const newOffset = (song.transposeOffset ?? 0) + semitones
+    await get().updateSong(id, { content: newContent, currentKey: newCurrentKey, transposeOffset: newOffset })
   },
 
   changeCapo: async (id, delta) => {

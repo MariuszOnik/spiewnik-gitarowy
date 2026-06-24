@@ -104,6 +104,10 @@ export default function SongViewPage() {
 
   const currentKey = song.currentKey ?? song.originalKey
   const shapeKey = currentKey && song.capo > 0 ? getShapeKey(currentKey, song.capo) : null
+  const offset = song.transposeOffset ?? 0
+  const keyDisplay = currentKey
+    ? currentKey
+    : offset === 0 ? '0' : offset > 0 ? `+${offset}` : `${offset}`
   const isOwner = !song.authorId || user?.id === song.authorId
 
   return (
@@ -218,7 +222,7 @@ export default function SongViewPage() {
                 <div className="text-center">
                   <p className="text-[10px] text-gray-400 leading-none">Tonacja</p>
                   <p className="font-mono font-bold text-amber-500 text-lg leading-tight mt-0.5">
-                    {currentKey ?? '—'}
+                    {keyDisplay}
                   </p>
                   {song.originalKey && currentKey !== song.originalKey && (
                     <p className="text-[9px] text-gray-400 leading-none">{song.originalKey}</p>

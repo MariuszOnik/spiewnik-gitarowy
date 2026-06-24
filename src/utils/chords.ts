@@ -197,9 +197,10 @@ export function getShapeKey(currentKey: NoteNames, capo: number): NoteNames {
   return CHROMATIC[((idx - capo) % 12 + 12) % 12]
 }
 
-// Oblicz tonację realną z kształtu + capo
+// Oblicz tonację realną z kształtu + capo (lub transpozycji – działa dla ujemnych wartości)
 export function getRealKey(shapeKey: NoteNames, capo: number): NoteNames {
-  return CHROMATIC[(CHROMATIC.indexOf(shapeKey) + capo) % 12]
+  const idx = CHROMATIC.indexOf(shapeKey)
+  return CHROMATIC[((idx + capo) % 12 + 12) % 12]
 }
 
 // Parsowanie linii w formacie inline [Chord]tekst → tokeny
