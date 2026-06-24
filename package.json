@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lukeed/uuid": "^2.0.1",
     "dexie": "^4.4.4",
     "lucide-react": "^1.21.0",
     "react": "^19.2.7",
