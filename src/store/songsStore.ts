@@ -3,6 +3,7 @@ import { db } from '@/db'
 import { supabase } from '@/lib/supabase'
 import type { Song, NoteNames, Genre, Language } from '@/types'
 import { transposeContent, getRealKey } from '@/utils/chords'
+import { makeSongKey } from '@/utils/songKey'
 import { v4 as uuid } from '@lukeed/uuid'
 
 interface SongsState {
@@ -34,16 +35,6 @@ async function getUserId(): Promise<string | null> {
   return user?.id ?? null
 }
 
-async function pushToSupabase(song: Song, userId: string) {
-  if (!supabase) return
-  await supabase.from('songs').upsert({ id: song.id, user_id: userId, data: song, updated_at: song.updatedAt })
-}
-
-async function deleteFromSupabase(id: string) {
-  if (!supabase) return
-  await supabase.from('songs').delete().eq('id', id)
-}
-
 export const useSongsStore = create<SongsState>()((set, get) => ({
   songs: [],
   loading: false,
@@ -54,35 +45,77 @@ export const useSongsStore = create<SongsState>()((set, get) => ({
 
   loadSongs: async () => {
     set({ loading: true })
+
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('id, song_key, author_id, author_name, data, updated_at')
+        .order('updated_at', { ascending: false })
+
+      if (!error && data) {
+        const songs: Song[] = (data as Array<{
+          id: string; song_key: string; author_id: string | null
+          author_name: string; data: Song; updated_at: number
+        }>).map(r => ({
+          ...r.data,
+          songKey: r.song_key,
+          authorId: r.author_id ?? undefined,
+          authorName: r.author_name || undefined,
+        }))
+        await db.songs.clear()
+        await db.songs.bulkPut(songs)
+        set({ songs, loading: false })
+        return
+      }
+    }
+
     const songs = await db.songs.orderBy('updatedAt').reverse().toArray()
     set({ songs, loading: false })
   },
 
   addSong: async (data) => {
     const id = uuid()
-    const song: Song = { ...data, id, createdAt: now(), updatedAt: now() }
+    const songKey = data.songKey ?? makeSongKey(data.title, data.artist)
+    const song: Song = { ...data, id, songKey, createdAt: now(), updatedAt: now() }
+
+    if (supabase) {
+      const userId = await getUserId()
+      if (userId) {
+        await supabase.from('songs').insert({
+          id: song.id,
+          song_key: songKey,
+          author_id: userId,
+          author_name: song.authorName ?? '',
+          data: song,
+          updated_at: song.updatedAt,
+        })
+      }
+    }
+
     await db.songs.add(song)
     set(s => ({ songs: [song, ...s.songs] }))
-    const userId = await getUserId()
-    if (userId) pushToSupabase(song, userId)
     return id
   },
 
   updateSong: async (id, data) => {
     const updated = { ...data, updatedAt: now() }
     await db.songs.update(id, updated)
-    set(s => ({ songs: s.songs.map(song => song.id === id ? { ...song, ...updated } : song) }))
-    const userId = await getUserId()
-    if (userId) {
-      const song = get().songs.find(s => s.id === id)
-      if (song) pushToSupabase(song, userId)
+
+    const existing = get().songs.find(s => s.id === id)
+    const song = existing ? { ...existing, ...updated } : null
+    set(s => ({ songs: s.songs.map(s2 => s2.id === id ? { ...s2, ...updated } : s2) }))
+
+    if (supabase && song) {
+      await supabase.from('songs').update({ data: song, updated_at: song.updatedAt }).eq('id', id)
     }
   },
 
   deleteSong: async (id) => {
     await db.songs.delete(id)
     set(s => ({ songs: s.songs.filter(song => song.id !== id) }))
-    deleteFromSupabase(id)
+    if (supabase) {
+      await supabase.from('songs').delete().eq('id', id)
+    }
   },
 
   toggleFavorite: async (id) => {
@@ -112,47 +145,7 @@ export const useSongsStore = create<SongsState>()((set, get) => ({
     await get().updateSong(id, { capo: newCapo, content: newContent, currentKey: newCurrentKey })
   },
 
-  // Merge lokalnych piosenek z Supabase po zalogowaniu
   syncAfterLogin: async () => {
-    if (!supabase) return
-    const userId = await getUserId()
-    if (!userId) return
-
-    // 1. Pobierz zdalne piosenki
-    const { data: remoteRows, error } = await supabase
-      .from('songs')
-      .select('id, data, updated_at')
-      .eq('user_id', userId)
-
-    if (error) { console.error('Sync error:', error); return }
-
-    const remoteMap = new Map((remoteRows ?? []).map((r: { id: string; data: Song; updated_at: number }) => [r.id, r]))
-
-    // 2. Pobierz lokalne piosenki
-    const localSongs = await db.songs.toArray()
-    const localMap = new Map(localSongs.map(s => [s.id, s]))
-
-    // 3. Wyślij lokalne które są nowsze lub nie ma ich w remote
-    const toUpsert = localSongs.filter(s => {
-      const remote = remoteMap.get(s.id)
-      return !remote || s.updatedAt > remote.updated_at
-    })
-    if (toUpsert.length > 0) {
-      await supabase.from('songs').upsert(
-        toUpsert.map(s => ({ id: s.id, user_id: userId, data: s, updated_at: s.updatedAt }))
-      )
-    }
-
-    // 4. Pobierz zdalne które są nowsze lub nie ma ich lokalnie
-    const toPull = (remoteRows ?? []).filter((r: { id: string; data: Song; updated_at: number }) => {
-      const local = localMap.get(r.id)
-      return !local || (r.data as Song).updatedAt > local.updatedAt
-    })
-    if (toPull.length > 0) {
-      await db.songs.bulkPut(toPull.map((r: { data: Song }) => r.data as Song))
-    }
-
-    // 5. Odśwież store
     await get().loadSongs()
   },
 

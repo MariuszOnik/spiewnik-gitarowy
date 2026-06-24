@@ -18,7 +18,10 @@ export interface Song {
   isFavorite: boolean
   scrollSpeed: number
   fontSize: number
-  chordOffset?: number   // przesunięcie poziome akordów w px (dla tej piosenki)
+  chordOffset?: number
+  authorId?: string
+  authorName?: string
+  songKey?: string
   createdAt: number
   updatedAt: number
 }

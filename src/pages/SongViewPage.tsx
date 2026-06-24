@@ -1,8 +1,9 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { ArrowLeft, Edit3, Maximize2, Zap, Heart, Type, Play, Pause, ChevronUp, ChevronDown, SlidersHorizontal } from 'lucide-react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import { ArrowLeft, Edit3, Maximize2, Zap, Heart, Type, Play, Pause, ChevronUp, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, PlusCircle } from 'lucide-react'
 import { useSongsStore } from '@/store/songsStore'
 import { useSettingsStore } from '@/store/settingsStore'
+import { useAuthStore } from '@/store/authStore'
 import { getShapeKey } from '@/utils/chords'
 import SongRenderer from '@/components/SongRenderer'
 import SongSettingsModal from '@/components/SongSettingsModal'
@@ -17,8 +18,20 @@ export default function SongViewPage() {
   const toggleFavorite = useSongsStore(s => s.toggleFavorite)
   const updateSong = useSongsStore(s => s.updateSong)
   const { defaultFontSize, defaultScrollSpeed, chordNotation, setChordNotation, bgColor } = useSettingsStore()
+  const user = useAuthStore(s => s.user)
 
   const song = songs.find(s => s.id === id)
+
+  // Wszystkie wersje tej samej piosenki posortowane od najstarszej
+  const versions = useMemo(() => {
+    if (!song?.songKey) return song ? [song] : []
+    return songs
+      .filter(s => s.songKey === song.songKey)
+      .sort((a, b) => a.createdAt - b.createdAt)
+  }, [songs, song])
+
+  const versionIndex = versions.findIndex(v => v.id === id)
+
   const [fontSize, setFontSize] = useState(song?.fontSize ?? defaultFontSize)
   const [scrollSpeed, setScrollSpeed] = useState(song?.scrollSpeed ?? defaultScrollSpeed)
   const [uiVisible, setUiVisible] = useState(true)
@@ -40,7 +53,6 @@ export default function SongViewPage() {
 
   const { isScrolling, toggle, stop } = useAutoScroll({ speed: scrollSpeed })
 
-  // Licznik 3-2-1 przed startem
   const startWithCountdown = useCallback(() => {
     if (isScrolling) { stop(); return }
     setCountdown(3)
@@ -59,7 +71,6 @@ export default function SongViewPage() {
 
   useEffect(() => () => { if (countdownRef.current) clearTimeout(countdownRef.current) }, [])
 
-  // Ukryj UI automatycznie po 3s przewijania
   useEffect(() => {
     if (!isScrolling) return
     const t = setTimeout(() => setUiVisible(false), 3000)
@@ -77,6 +88,7 @@ export default function SongViewPage() {
 
   const currentKey = song.currentKey ?? song.originalKey
   const shapeKey = currentKey && song.capo > 0 ? getShapeKey(currentKey, song.capo) : null
+  const isOwner = !song.authorId || user?.id === song.authorId
 
   const handleSpeedChange = (v: number) => {
     setScrollSpeed(v)
@@ -86,14 +98,12 @@ export default function SongViewPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col" style={bgColor ? { backgroundColor: bgColor } : undefined}>
 
-      {/* Countdown overlay */}
       {countdown !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 pointer-events-none">
           <span className="text-white font-bold" style={{ fontSize: 120, lineHeight: 1 }}>{countdown}</span>
         </div>
       )}
 
-      {/* Top bar */}
       {uiVisible && (
         <header className="sticky top-0 z-20 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-3 py-2">
           <div className="flex items-center gap-2 max-w-2xl mx-auto">
@@ -124,14 +134,53 @@ export default function SongViewPage() {
             >
               <SlidersHorizontal size={20} className="text-gray-500" />
             </button>
-            <button onClick={() => navigate(`/song/${song.id}/edit`)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0">
-              <Edit3 size={20} className="text-gray-500" />
-            </button>
+            {isOwner && (
+              <button onClick={() => navigate(`/song/${song.id}/edit`)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0">
+                <Edit3 size={20} className="text-gray-500" />
+              </button>
+            )}
           </div>
         </header>
       )}
 
-      {/* Modal ustawień */}
+      {/* Swiper wersji */}
+      {uiVisible && (versions.length > 1 || song.authorName) && (
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100 dark:border-amber-800/30">
+          <button
+            onClick={() => navigate(`/song/${versions[versionIndex - 1].id}`)}
+            disabled={versionIndex <= 0}
+            className="p-1 rounded disabled:opacity-30 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+          >
+            <ChevronLeft size={16} className="text-amber-600 dark:text-amber-400" />
+          </button>
+
+          <div className="flex-1 text-center text-xs text-amber-700 dark:text-amber-400">
+            {song.authorName && <span className="font-medium">by {song.authorName}</span>}
+            {versions.length > 1 && (
+              <span className="ml-1 opacity-60">· {versionIndex + 1}/{versions.length}</span>
+            )}
+          </div>
+
+          <button
+            onClick={() => navigate(`/song/${versions[versionIndex + 1].id}`)}
+            disabled={versionIndex >= versions.length - 1}
+            className="p-1 rounded disabled:opacity-30 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+          >
+            <ChevronRight size={16} className="text-amber-600 dark:text-amber-400" />
+          </button>
+
+          {user && (
+            <button
+              onClick={() => navigate(`/song/new?fork=${song.id}`)}
+              className="ml-1 p-1 rounded hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+              title="Dodaj swoją wersję"
+            >
+              <PlusCircle size={16} className="text-amber-500" />
+            </button>
+          )}
+        </div>
+      )}
+
       {settingsOpen && (
         <SongSettingsModal
           songId={song.id}
@@ -140,7 +189,6 @@ export default function SongViewPage() {
         />
       )}
 
-      {/* Treść - kliknięcie toggleuje UI */}
       <div
         className="flex-1 px-4 py-4 max-w-2xl mx-auto w-full"
         onClick={() => setUiVisible(v => !v)}
@@ -149,15 +197,11 @@ export default function SongViewPage() {
         <div className="h-40" />
       </div>
 
-      {/* Bottom controls */}
       {uiVisible && (
         <div className="fixed bottom-0 left-0 right-0 z-20 bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800">
           <div className="max-w-2xl mx-auto px-3 py-2 flex flex-col gap-2">
 
-            {/* Rząd 1: Transpozycja | Capo | Czcionka | Fullscreen */}
             <div className="flex items-center justify-between gap-1">
-
-              {/* Transpozycja */}
               <div className="flex items-center gap-1">
                 <button
                   onClick={e => { e.stopPropagation(); transposeBy(song.id, -1) }}
@@ -180,7 +224,6 @@ export default function SongViewPage() {
                 >+</button>
               </div>
 
-              {/* Capo +/- */}
               <div className="flex items-center gap-1">
                 <button
                   onClick={e => { e.stopPropagation(); changeCapo(song.id, -1) }}
@@ -199,7 +242,6 @@ export default function SongViewPage() {
                 >+</button>
               </div>
 
-              {/* Czcionka */}
               <div className="flex items-center gap-1">
                 <button
                   onClick={e => { e.stopPropagation(); setFontSize(f => Math.max(12, f - 2)) }}
@@ -218,9 +260,7 @@ export default function SongViewPage() {
               ><Maximize2 size={15} className="text-gray-400" /></button>
             </div>
 
-            {/* Rząd 2: Auto-scroll */}
             <div className="flex items-center gap-2 pb-1" onClick={e => e.stopPropagation()}>
-              {/* Play/Stop */}
               <button
                 onClick={startWithCountdown}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm transition-colors flex-shrink-0 ${
@@ -233,7 +273,6 @@ export default function SongViewPage() {
                 {isScrolling ? 'Stop' : 'Auto'}
               </button>
 
-              {/* Prędkość - suwak */}
               <div className="flex items-center gap-1.5 flex-1">
                 <button
                   onClick={() => handleSpeedChange(Math.max(1, scrollSpeed - 5))}

@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useSongsStore } from '@/store/songsStore'
 import type { Song } from '@/types'
 
-interface Props { song: Song }
+interface Props {
+  song: Song
+  versionCount?: number
+}
 
-export default function SongCard({ song }: Props) {
+export default function SongCard({ song, versionCount = 1 }: Props) {
   const navigate = useNavigate()
   const toggleFavorite = useSongsStore(s => s.toggleFavorite)
 
@@ -14,13 +17,23 @@ export default function SongCard({ song }: Props) {
       className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 active:scale-[0.98] transition-transform cursor-pointer"
       onClick={() => navigate(`/song/${song.id}`)}
     >
-      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-        <Music2 size={20} className="text-amber-500" />
+      <div className="relative flex-shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+          <Music2 size={20} className="text-amber-500" />
+        </div>
+        {versionCount > 1 && (
+          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+            {versionCount}
+          </span>
+        )}
       </div>
 
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-gray-900 dark:text-white truncate">{song.title}</p>
         <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{song.artist}</p>
+        {song.authorName && (
+          <p className="text-xs text-amber-600 dark:text-amber-400 truncate">by {song.authorName}</p>
+        )}
         {song.tags.length > 0 && (
           <div className="flex gap-1 mt-1 flex-wrap">
             {song.tags.slice(0, 3).map(tag => (
