@@ -4,7 +4,64 @@ import { useSettingsStore } from '@/store/settingsStore'
 interface Props {
   content: string
   fontSize: number
-  chordOffset?: number  // kept for API compat, not applied to rendering
+  chordOffset?: number  // kept for API compat
+}
+
+type Segment = { chord?: string; text: string }
+
+function parseChordSegments(chordLine: string, lyricLine: string): Segment[] {
+  const positions: Array<{ chord: string; pos: number }> = []
+  const re = /\S+/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(chordLine)) !== null) {
+    positions.push({ chord: m[0], pos: m.index })
+  }
+  if (positions.length === 0) return [{ text: lyricLine }]
+
+  // Find word-start positions in lyric line
+  const wordStarts: number[] = []
+  for (let j = 0; j < lyricLine.length; j++) {
+    if (lyricLine[j] !== ' ' && (j === 0 || lyricLine[j - 1] === ' ')) {
+      wordStarts.push(j)
+    }
+  }
+
+  // Snap each chord position to nearest word boundary (≤ chord pos)
+  function snapToWord(pos: number): number {
+    let best = 0
+    for (const ws of wordStarts) {
+      if (ws <= pos) best = ws
+      else break
+    }
+    return best
+  }
+
+  // Map chords to word boundaries, deduplicate
+  const seen = new Set<number>()
+  const snapped: Array<{ chord: string; pos: number }> = []
+  for (const { chord, pos } of positions) {
+    const snappedPos = wordStarts.length > 0 ? snapToWord(pos) : pos
+    if (!seen.has(snappedPos)) {
+      snapped.push({ chord, pos: snappedPos })
+      seen.add(snappedPos)
+    }
+  }
+
+  const segments: Segment[] = []
+
+  // Text before first chord
+  if (snapped[0].pos > 0) {
+    segments.push({ text: lyricLine.slice(0, snapped[0].pos) })
+  }
+
+  for (let i = 0; i < snapped.length; i++) {
+    const { chord, pos } = snapped[i]
+    const nextPos = i + 1 < snapped.length ? snapped[i + 1].pos : undefined
+    const text = nextPos !== undefined ? lyricLine.slice(pos, nextPos) : lyricLine.slice(pos)
+    segments.push({ chord, text })
+  }
+
+  return segments
 }
 
 export default function SongRenderer({ content, fontSize }: Props) {
@@ -13,9 +70,6 @@ export default function SongRenderer({ content, fontSize }: Props) {
   const lyricsColor = useSettingsStore(s => s.lyricsColor)
 
   const displayContent = chordNotation === 'european' ? contentToEuropean(content) : content
-
-  // Używamy ORYGINALNYCH linii do detekcji akordów (isValidChord nie zna Dis/Gis),
-  // a linii wyświetlanych (europejskich) do renderowania.
   const originalLines = content.split('\n')
   const lines = displayContent.split('\n')
 
@@ -31,11 +85,10 @@ export default function SongRenderer({ content, fontSize }: Props) {
     // Pusta linia
     if (!trimmed) {
       elements.push(<div key={i} className="h-4" />)
-      i++
-      continue
+      i++; continue
     }
 
-    // Nagłówek sekcji [Verse 1] / [Refren] itp.
+    // Nagłówek sekcji [Verse 1]
     if (/^\[.+\]$/.test(trimmed) && !trimmed.slice(1, -1).match(/^[A-G][b#]?/)) {
       elements.push(
         <p key={i} className="font-bold uppercase tracking-widest mt-4 mb-1"
@@ -46,7 +99,7 @@ export default function SongRenderer({ content, fontSize }: Props) {
       i++; continue
     }
 
-    // Linia akordów nad tekstem – detekcja na oryginalnej linii
+    // Linia akordów
     if (isChordLine(origTrimmed)) {
       const nextOrigLine = originalLines[i + 1]
       const nextDispLine = lines[i + 1]
@@ -54,27 +107,46 @@ export default function SongRenderer({ content, fontSize }: Props) {
         && nextOrigLine.trim()
         && !isChordLine(nextOrigLine.trim())
 
-      elements.push(
-        <div key={i} style={{ marginBottom: hasLyric ? 0 : 8 }}>
-          <div
-            className="font-mono font-bold leading-none mb-0.5 whitespace-pre-wrap"
-            style={{ fontSize, color: chordColor }}
-          >
-            {trimmed}
+      if (hasLyric) {
+        // Inline akord+tekst: każdy akord "przykleja się" do swojego fragmentu
+        const segments = parseChordSegments(trimmed, nextDispLine)
+        elements.push(
+          <div key={i} className="mb-2">
+            {segments.map((seg, si) => (
+              <span
+                key={si}
+                className="relative inline-block"
+                style={{ paddingTop: `${fontSize * 1.4}px`, verticalAlign: 'top' }}
+              >
+                {seg.chord && (
+                  <span
+                    className="absolute top-0 left-0 font-mono font-bold whitespace-nowrap leading-none"
+                    style={{ fontSize, color: chordColor }}
+                  >
+                    {seg.chord}
+                  </span>
+                )}
+                <span style={{ fontSize, color: lyricsColor || undefined }}>
+                  {seg.text || ' '}
+                </span>
+              </span>
+            ))}
           </div>
-          {hasLyric && (
-            <p className="leading-snug whitespace-pre-wrap"
-               style={{ fontSize, color: lyricsColor || undefined }}>
-              {nextDispLine}
-            </p>
-          )}
+        )
+        i += 2; continue
+      }
+
+      // Linia akordów bez tekstu
+      elements.push(
+        <div key={i} className="font-mono font-bold whitespace-pre-wrap mb-2"
+             style={{ fontSize, color: chordColor }}>
+          {trimmed}
         </div>
       )
-
-      i += hasLyric ? 2 : 1; continue
+      i++; continue
     }
 
-    // Linia inline [Chord]tekst → akordy nad, tekst pod
+    // Format inline [Akord]tekst
     if (line.includes('[')) {
       const tokens = parseLine(line)
       elements.push(
