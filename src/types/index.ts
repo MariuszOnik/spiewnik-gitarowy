@@ -29,3 +29,12 @@ export interface UserSettings {
 }
 
 export type ViewMode = 'list' | 'view' | 'edit' | 'stage'
+
+export interface Setlist {
+  id: string
+  name: string
+  description?: string
+  songIds: string[]   // kolejność ma znaczenie
+  createdAt: number
+  updatedAt: number
+}

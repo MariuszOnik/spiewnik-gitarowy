@@ -1,5 +1,6 @@
-import { Plus, Music2, Moon, Sun, Guitar } from 'lucide-react'
+import { Plus, Music2, Moon, Sun, Guitar, ListMusic } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useMemo } from 'react'
 import { useInitDb } from '@/hooks/useInitDb'
 import { useSongsStore } from '@/store/songsStore'
 import { useSettingsStore } from '@/store/settingsStore'
@@ -9,8 +10,26 @@ import SearchBar from '@/components/SearchBar'
 export default function SongListPage() {
   useInitDb()
   const navigate = useNavigate()
-  const { loading } = useSongsStore()
-  const filtered = useSongsStore(s => s.getFiltered())
+  const loading = useSongsStore(s => s.loading)
+  const songs = useSongsStore(s => s.songs)
+  const searchQuery = useSongsStore(s => s.searchQuery)
+  const filterGenre = useSongsStore(s => s.filterGenre)
+  const filterLanguage = useSongsStore(s => s.filterLanguage)
+  const filterKey = useSongsStore(s => s.filterKey)
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase()
+    return songs.filter(song => {
+      if (filterGenre && song.genre !== filterGenre) return false
+      if (filterLanguage && song.language !== filterLanguage) return false
+      if (filterKey && song.currentKey !== filterKey && song.originalKey !== filterKey) return false
+      if (q) {
+        const haystack = [song.title, song.artist, ...(song.tags ?? []), song.content].join(' ').toLowerCase()
+        if (!haystack.includes(q)) return false
+      }
+      return true
+    })
+  }, [songs, searchQuery, filterGenre, filterLanguage, filterKey])
   const { theme, setTheme } = useSettingsStore()
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
@@ -24,6 +43,14 @@ export default function SongListPage() {
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Śpiewnik Gitarowy</h1>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/setlists')}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Setlisty"
+            title="Setlisty"
+          >
+            <ListMusic size={20} className="text-blue-500" />
+          </button>
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

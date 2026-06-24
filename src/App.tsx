@@ -5,6 +5,8 @@ import SongListPage from '@/pages/SongListPage'
 import SongViewPage from '@/pages/SongViewPage'
 import SongEditPage from '@/pages/SongEditPage'
 import StagePage from '@/pages/StagePage'
+import SetlistsPage from '@/pages/SetlistsPage'
+import SetlistDetailPage from '@/pages/SetlistDetailPage'
 
 export default function App() {
   const { theme } = useSettingsStore()
@@ -29,6 +31,8 @@ export default function App() {
         <Route path="/song/:id/edit" element={<SongEditPage />} />
         <Route path="/song/new" element={<SongEditPage />} />
         <Route path="/song/:id/stage" element={<StagePage />} />
+        <Route path="/setlists" element={<SetlistsPage />} />
+        <Route path="/setlist/:id" element={<SetlistDetailPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
