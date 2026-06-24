@@ -26,6 +26,7 @@ export interface UserSettings {
   theme: 'light' | 'dark' | 'system'
   defaultFontSize: number
   defaultScrollSpeed: number
+  chordNotation: 'english' | 'european'  // english: C# B, european: Cis H
 }
 
 export type ViewMode = 'list' | 'view' | 'edit' | 'stage'

@@ -15,7 +15,7 @@ export default function SongViewPage() {
   const changeCapo = useSongsStore(s => s.changeCapo)
   const toggleFavorite = useSongsStore(s => s.toggleFavorite)
   const updateSong = useSongsStore(s => s.updateSong)
-  const { defaultFontSize, defaultScrollSpeed } = useSettingsStore()
+  const { defaultFontSize, defaultScrollSpeed, chordNotation, setChordNotation } = useSettingsStore()
 
   const song = songs.find(s => s.id === id)
   const [fontSize, setFontSize] = useState(song?.fontSize ?? defaultFontSize)
@@ -107,6 +107,13 @@ export default function SongViewPage() {
             </button>
             <button onClick={() => navigate(`/song/${song.id}/stage`)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0" title="Tryb sceniczny">
               <Zap size={20} className="text-amber-500" />
+            </button>
+            <button
+              onClick={() => setChordNotation(chordNotation === 'european' ? 'english' : 'european')}
+              className="px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0 font-mono text-xs font-bold text-gray-500"
+              title="Zmień notację akordów"
+            >
+              {chordNotation === 'european' ? 'H' : 'B'}
             </button>
             <button onClick={() => navigate(`/song/${song.id}/edit`)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0">
               <Edit3 size={20} className="text-gray-500" />

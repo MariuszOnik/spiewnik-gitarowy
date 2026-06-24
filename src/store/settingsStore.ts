@@ -6,6 +6,7 @@ interface SettingsState extends UserSettings {
   setTheme: (theme: UserSettings['theme']) => void
   setDefaultFontSize: (size: number) => void
   setDefaultScrollSpeed: (speed: number) => void
+  setChordNotation: (n: UserSettings['chordNotation']) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -14,9 +15,11 @@ export const useSettingsStore = create<SettingsState>()(
       theme: 'system' as UserSettings['theme'],
       defaultFontSize: 18,
       defaultScrollSpeed: 50,
+      chordNotation: 'european' as UserSettings['chordNotation'],
       setTheme: (theme: UserSettings['theme']) => set({ theme }),
       setDefaultFontSize: (defaultFontSize: number) => set({ defaultFontSize }),
       setDefaultScrollSpeed: (defaultScrollSpeed: number) => set({ defaultScrollSpeed }),
+      setChordNotation: (chordNotation: UserSettings['chordNotation']) => set({ chordNotation }),
     }),
     { name: 'spiewnik-settings' }
   )

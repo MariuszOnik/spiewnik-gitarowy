@@ -1,4 +1,5 @@
-import { isChordLine, parseLine } from '@/utils/chords'
+import { isChordLine, parseLine, contentToEuropean } from '@/utils/chords'
+import { useSettingsStore } from '@/store/settingsStore'
 
 interface Props {
   content: string
@@ -6,8 +7,9 @@ interface Props {
 }
 
 export default function SongRenderer({ content, fontSize }: Props) {
-  const lines = content.split('\n')
-
+  const chordNotation = useSettingsStore(s => s.chordNotation)
+  const displayContent = chordNotation === 'european' ? contentToEuropean(content) : content
+  const lines = displayContent.split('\n')
   const elements: React.ReactNode[] = []
   let i = 0
 
@@ -25,49 +27,53 @@ export default function SongRenderer({ content, fontSize }: Props) {
     // Nagłówek sekcji [Verse 1] / [Refren] itp.
     if (/^\[.+\]$/.test(trimmed) && !trimmed.slice(1, -1).match(/^[A-G][b#]?/)) {
       elements.push(
-        <p key={i} className="font-bold text-amber-500 uppercase tracking-widest mt-4 mb-1" style={{ fontSize: fontSize * 0.7 }}>
+        <p key={i} className="font-bold text-amber-500 uppercase tracking-widest mt-4 mb-1"
+           style={{ fontSize: fontSize * 0.7 }}>
           {trimmed.slice(1, -1)}
         </p>
       )
-      i++
-      continue
+      i++; continue
     }
 
     // Linia akordów nad tekstem
     if (isChordLine(trimmed)) {
-      const chords = trimmed.split(/\s+/).filter(Boolean)
       const nextLine = lines[i + 1]
       const hasLyric = nextLine !== undefined && nextLine.trim() && !isChordLine(nextLine.trim())
 
       elements.push(
-        <div key={i} className="chord-row" style={{ marginBottom: hasLyric ? 0 : 8 }}>
-          <div className="flex flex-wrap gap-x-4 gap-y-0 font-mono font-bold text-amber-500 dark:text-amber-400 leading-none mb-0.5" style={{ fontSize }}>
-            {chords.map((chord, ci) => (
-              <span key={ci}>{chord}</span>
-            ))}
+        <div key={i} style={{ marginBottom: hasLyric ? 0 : 8 }}>
+          {/* whitespace-pre zachowuje oryginalne odstępy – zapobiega zawijaniu akordów */}
+          <div
+            className="font-mono font-bold text-amber-500 dark:text-amber-400 leading-none mb-0.5 whitespace-pre overflow-x-auto"
+            style={{ fontSize }}
+          >
+            {trimmed}
           </div>
           {hasLyric && (
-            <p className="text-gray-900 dark:text-gray-100 leading-snug" style={{ fontSize }}>
+            <p className="text-gray-900 dark:text-gray-100 leading-snug whitespace-pre-wrap"
+               style={{ fontSize }}>
               {nextLine}
             </p>
           )}
         </div>
       )
 
-      i += hasLyric ? 2 : 1
-      continue
+      i += hasLyric ? 2 : 1; continue
     }
 
-    // Linia inline [Chord]tekst
+    // Linia inline [Chord]tekst → akordy nad, tekst pod
     if (line.includes('[')) {
       const tokens = parseLine(line)
       elements.push(
         <div key={i} className="mb-1">
-          <div className="flex flex-wrap font-mono font-bold text-amber-500 dark:text-amber-400 leading-none" style={{ fontSize: fontSize * 0.85 }}>
+          <div
+            className="font-mono font-bold text-amber-500 dark:text-amber-400 leading-none whitespace-pre"
+            style={{ fontSize: fontSize * 0.85 }}
+          >
             {tokens.map((t, ti) =>
               t.type === 'chord'
-                ? <span key={ti} className="mr-2">{t.value}</span>
-                : <span key={ti} className="invisible" aria-hidden>{t.value}</span>
+                ? <span key={ti}>{t.value} </span>
+                : <span key={ti} className="invisible" aria-hidden>{t.value.replace(/./g, ' ')}</span>
             )}
           </div>
           <p className="text-gray-900 dark:text-gray-100 leading-snug" style={{ fontSize }}>
@@ -77,13 +83,13 @@ export default function SongRenderer({ content, fontSize }: Props) {
           </p>
         </div>
       )
-      i++
-      continue
+      i++; continue
     }
 
     // Zwykła linia tekstu
     elements.push(
-      <p key={i} className="text-gray-900 dark:text-gray-100 leading-snug mb-1" style={{ fontSize }}>
+      <p key={i} className="text-gray-900 dark:text-gray-100 leading-snug mb-1 whitespace-pre-wrap"
+         style={{ fontSize }}>
         {line}
       </p>
     )

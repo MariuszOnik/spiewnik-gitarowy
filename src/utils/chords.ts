@@ -65,6 +65,9 @@ function isValidChordLoose(token: string): boolean {
 }
 
 function normalizeChordToken(token: string): string {
+  // Już poprawna notacja standard - nie ruszaj (zapobiega podwójnej normalizacji B→A#)
+  if (isValidChord(token)) return token
+
   // Rozpoznaj root + modifier + bass
   // Próbujemy: 2-znakowy root (Cis, Dis, Fis...) lub 1-znakowy (a, e, H...)
   const match = token.match(/^([A-Ha-h](?:is|es|[b#])?)((?:maj7|maj9|maj|min|m|sus2|sus4|sus|add9|add11|add|dim7|dim|aug|7|9|11|13|6)*)(?:\/([A-Ha-h](?:is|es|[b#])?))?$/)
@@ -268,6 +271,38 @@ export function parseSongContent(content: string): SongLine[] {
   }
 
   return result
+}
+
+// Konwersja notacji angielskiej → europejskiej (do wyświetlania)
+// Przechowujemy w standardzie C#/A#/B, wyświetlamy jako Cis/B/H
+const ROOT_TO_EUROPEAN: Record<string, string> = {
+  'B': 'H', 'A#': 'B',                // B natural → H, Bb → B
+  'C#': 'Cis', 'D#': 'Dis',
+  'F#': 'Fis', 'G#': 'Gis',
+  'Eb': 'Es', 'Ab': 'As',
+  'Db': 'Des', 'Gb': 'Ges',
+}
+
+export function toEuropeanNotation(chord: string): string {
+  // Zamień root, zachowaj modifier
+  return chord.replace(/^([A-G][b#]?)/, root => ROOT_TO_EUROPEAN[root] ?? root)
+}
+
+// Wyświetla linie akordów w notacji europejskiej (nie zmienia danych w bazie)
+export function contentToEuropean(content: string): string {
+  const chordToken = /[A-G][b#]?(?:maj7|maj9|maj|min|m|sus2|sus4|sus|add9|add11|add|dim7|dim|aug|7|9|11|13|6|b5|#5)*(?:\/[A-G][b#]?)?/g
+  return content
+    .split('\n')
+    .map(line => {
+      if (isChordLine(line.trim())) {
+        return line.replace(chordToken, chord => isValidChord(chord) ? toEuropeanNotation(chord) : chord)
+      }
+      if (line.includes('[')) {
+        return line.replace(/\[([^\]]+)\]/g, (_, chord) => `[${toEuropeanNotation(chord)}]`)
+      }
+      return line
+    })
+    .join('\n')
 }
 
 export { CHROMATIC, type NoteNames }
