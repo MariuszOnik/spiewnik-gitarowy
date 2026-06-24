@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   transposeChord, transposeContent, transposeChordLine,
-  getShapeKey, getRealKey, parseLine, isChordLine, isValidChord, parseSongContent
+  getShapeKey, getRealKey, parseLine, isChordLine, isValidChord, parseSongContent,
+  normalizeNotation
 } from './chords'
 
 describe('isValidChord', () => {
@@ -119,6 +120,43 @@ describe('parseLine (inline format)', () => {
       { type: 'chord', value: 'G' },
       { type: 'text', value: 'world' },
     ])
+  })
+})
+
+describe('normalizeNotation - polska notacja gitarowa', () => {
+  it('małe litery = molowe (lowercase = minor)', () => {
+    expect(normalizeNotation('a  e  h')).toBe('Am  Em  Bm')
+    expect(normalizeNotation('fis  cis  dis')).toBe('F#m  C#m  D#m')
+    expect(normalizeNotation('h  fis')).toBe('Bm  F#m')
+  })
+
+  it('wielkie litery = durowe (uppercase = major)', () => {
+    expect(normalizeNotation('A  E  H')).toBe('A  E  B')
+    expect(normalizeNotation('Fis  Cis')).toBe('F#  C#')
+  })
+
+  it('zachowuje jawny modifier', () => {
+    expect(normalizeNotation('am7')).toBe('Am7')
+    expect(normalizeNotation('hm7')).toBe('Bm7')
+    expect(normalizeNotation('esus4')).toBe('Esus4')
+  })
+
+  it('jest idempotentna (dwa razy = ten sam wynik)', () => {
+    const once = normalizeNotation('h  fis  Hm  Fis')
+    const twice = normalizeNotation(once)
+    expect(once).toBe(twice)
+  })
+
+  it('transpozycja po normalizacji: h fis -2 = Bm F#m -2 = Am Em', () => {
+    const normalized = normalizeNotation('h  fis')
+    const transposed = transposeContent(normalized, -2)
+    expect(transposed).toBe('Am  Em')
+  })
+
+  it('pełny przykład z piosenki', () => {
+    const input = 'D           A\nZapiszę śniegiem\nh            fis\nzaplotę z dymu'
+    const expected = 'D           A\nZapiszę śniegiem\nBm            F#m\nzaplotę z dymu'
+    expect(normalizeNotation(input)).toBe(expected)
   })
 })
 

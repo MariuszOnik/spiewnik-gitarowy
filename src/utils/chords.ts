@@ -69,16 +69,24 @@ function normalizeChordToken(token: string): string {
   if (isValidChord(token)) return token
 
   // Rozpoznaj root + modifier + bass
-  // Próbujemy: 2-znakowy root (Cis, Dis, Fis...) lub 1-znakowy (a, e, H...)
   const match = token.match(/^([A-Ha-h](?:is|es|[b#])?)((?:maj7|maj9|maj|min|m|sus2|sus4|sus|add9|add11|add|dim7|dim|aug|7|9|11|13|6)*)(?:\/([A-Ha-h](?:is|es|[b#])?))?$/)
   if (!match) return token
 
   const [, rawRoot, modifier, rawBass] = match
-
   const root = resolveRoot(rawRoot)
   if (!root) return token
 
-  let result = root + (modifier ?? '')
+  // Polska notacja gitarowa: mała litera pierwszego znaku = MOLOWY (minor)
+  // h → Bm, fis → F#m, a → Am, e → Em, cis → C#m
+  // Wyjątek: jeśli modifier jawnie zawiera już 'm', 'maj', 'min', 'sus' itp. – nie dodawaj
+  const startsLowercase = rawRoot.charAt(0) === rawRoot.charAt(0).toLowerCase()
+                       && rawRoot.charAt(0) !== rawRoot.charAt(0).toUpperCase()
+  const hasExplicitQuality = modifier !== ''
+  const shouldAddMinor = startsLowercase && !hasExplicitQuality
+
+  const effectiveModifier = shouldAddMinor ? 'm' : (modifier ?? '')
+
+  let result = root + effectiveModifier
   if (rawBass) {
     const bass = resolveRoot(rawBass)
     result += '/' + (bass ?? rawBass)
