@@ -1,4 +1,4 @@
-import { Plus, Music2, Moon, Sun, Guitar, ListMusic, User, LogIn } from 'lucide-react'
+import { Plus, Music2, Moon, Sun, Guitar, ListMusic, LogIn } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMemo } from 'react'
 import { useInitDb } from '@/hooks/useInitDb'
